@@ -22,9 +22,9 @@ class APIDataSource:
         self.cache = cache
         self.endpoint = endpoint
 
-    def read(self, params: dict = None):
+    async def read(self, params: dict = None):
         """
-        Reads data from the data source.
+        Reads data from the data source asynchronously.
 
         Args:
             params: The query parameters for the request.
@@ -33,11 +33,11 @@ class APIDataSource:
             The data from the API.
         """
         cache_key = f"{self.endpoint}:{params}"
-        cached_data = self.cache.get(cache_key)
+        cached_data = await self.cache.get(cache_key)
         if cached_data is not None:
             return cached_data
 
         self.rate_limiter.check_rate()
-        data = self.api_client.call_api(self.endpoint, params)
-        self.cache.set(cache_key, data)
+        data = await self.api_client.call_api(self.endpoint, params)
+        await self.cache.set(cache_key, data)
         return data

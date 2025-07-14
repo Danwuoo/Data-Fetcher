@@ -1,9 +1,10 @@
-import requests
+import httpx
+import asyncio
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 
 class ApiClient:
     """
-    A simple API client with retry logic.
+    A simple asynchronous API client with retry logic.
     """
 
     def __init__(self, base_url: str):
@@ -14,12 +15,12 @@ class ApiClient:
             base_url: The base URL for the API.
         """
         self.base_url = base_url
-        self.session = requests.Session()
+        self.session = httpx.AsyncClient()
 
     @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
-    def call_api(self, endpoint: str, params: dict = None):
+    async def call_api(self, endpoint: str, params: dict = None):
         """
-        Calls an API endpoint.
+        Calls an API endpoint asynchronously.
 
         Args:
             endpoint: The API endpoint to call.
@@ -30,12 +31,12 @@ class ApiClient:
         """
         url = f"{self.base_url}/{endpoint}"
         try:
-            response = self.session.get(url, params=params)
+            response = await self.session.get(url, params=params)
             response.raise_for_status()
             return response.json()
-        except requests.exceptions.HTTPError as e:
+        except httpx.HTTPStatusError as e:
             if e.response.status_code == 429:
                 retry_after = int(e.response.headers.get("Retry-After", 0))
                 if retry_after > 0:
-                    time.sleep(retry_after)
+                    await asyncio.sleep(retry_after)
             raise e

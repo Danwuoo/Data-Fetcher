@@ -1,12 +1,11 @@
-import time
-from typing import Union
+from ratelimit import limits, sleep_and_retry
 
 class RateLimiter:
     """
-    A rate limiter using the Token Bucket algorithm.
+    A rate limiter using the ratelimit library.
     """
 
-    def __init__(self, calls: int, period: Union[int, float]):
+    def __init__(self, calls: int, period: int):
         """
         Initializes the RateLimiter.
 
@@ -14,27 +13,14 @@ class RateLimiter:
             calls: The number of calls allowed per period.
             period: The time period in seconds.
         """
-        self.calls = calls
-        self.period = period
-        self.tokens = self.calls
-        self.last_refill = time.monotonic()
-
-    def _refill(self):
-        """
-        Refills the token bucket based on the elapsed time.
-        """
-        now = time.monotonic()
-        elapsed = now - self.last_refill
-        if elapsed > self.period:
-            self.tokens = self.calls
-            self.last_refill = now
+        self.limiter = limits(calls=calls, period=period)
 
     def check_rate(self):
         """
-        Checks if a call is allowed. If not, it blocks until a token is available.
+        Applies the rate limit.
         """
-        self._refill()
-        while self.tokens <= 0:
-            time.sleep(0.1)
-            self._refill()
-        self.tokens -= 1
+        @sleep_and_retry
+        @self.limiter
+        def _check_rate():
+            pass
+        _check_rate()

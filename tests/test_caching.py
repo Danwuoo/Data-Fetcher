@@ -1,37 +1,31 @@
-import unittest
+import pytest
 from data_ingestion.py.caching import LRUCache
 
-class TestLRUCache(unittest.TestCase):
+@pytest.mark.asyncio
+async def test_cache_capacity():
     """
-    Tests for the LRUCache class.
+    Tests that the cache respects the capacity.
     """
+    cache = LRUCache(capacity=2)
+    await cache.set("a", 1)
+    await cache.set("b", 2)
+    await cache.set("c", 3)
 
-    def test_cache_capacity(self):
-        """
-        Tests that the cache respects the capacity.
-        """
-        cache = LRUCache(capacity=2)
-        cache.set("a", 1)
-        cache.set("b", 2)
-        cache.set("c", 3)
+    assert await cache.get("a") is None
+    assert await cache.get("b") == 2
+    assert await cache.get("c") == 3
 
-        self.assertIsNone(cache.get("a"))
-        self.assertEqual(cache.get("b"), 2)
-        self.assertEqual(cache.get("c"), 3)
+@pytest.mark.asyncio
+async def test_cache_lru():
+    """
+    Tests the LRU logic of the cache.
+    """
+    cache = LRUCache(capacity=2)
+    await cache.set("a", 1)
+    await cache.set("b", 2)
+    await cache.get("a")
+    await cache.set("c", 3)
 
-    def test_cache_lru(self):
-        """
-        Tests the LRU logic of the cache.
-        """
-        cache = LRUCache(capacity=2)
-        cache.set("a", 1)
-        cache.set("b", 2)
-        cache.get("a")
-        cache.set("c", 3)
-
-        self.assertIsNone(cache.get("b"))
-        self.assertEqual(cache.get("a"), 1)
-        self.assertEqual(cache.get("c"), 3)
-
-if __name__ == "__main__":
-    unittest.main()
+    assert await cache.get("b") is None
+    assert await cache.get("a") == 1
+    assert await cache.get("c") == 3

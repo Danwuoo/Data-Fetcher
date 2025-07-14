@@ -1,42 +1,34 @@
-import unittest
-import requests_mock
+import pytest
+from httpx import Response
 from data_ingestion.py.api_client import ApiClient
 
-class TestApiClient(unittest.TestCase):
+@pytest.mark.asyncio
+async def test_call_api_success(httpx_mock):
     """
-    Tests for the ApiClient class.
+    Tests a successful API call.
     """
+    base_url = "http://test.com"
+    endpoint = "test"
+    expected_response = {"data": "success"}
+    httpx_mock.add_response(url=f"{base_url}/{endpoint}", json=expected_response)
+    api_client = ApiClient(base_url=base_url)
 
-    def setUp(self):
-        self.base_url = "http://test.com"
-        self.api_client = ApiClient(base_url=self.base_url)
+    response = await api_client.call_api(endpoint)
+    assert response == expected_response
 
-    @requests_mock.Mocker()
-    def test_call_api_success(self, m):
-        """
-        Tests a successful API call.
-        """
-        endpoint = "test"
-        expected_response = {"data": "success"}
-        m.get(f"{self.base_url}/{endpoint}", json=expected_response)
+@pytest.mark.asyncio
+async def test_call_api_retry(httpx_mock):
+    """
+    Tests the retry logic for a 429 error.
+    """
+    base_url = "http://test.com"
+    endpoint = "test"
+    httpx_mock.add_callback(
+        lambda request, ext: Response(429, headers={"Retry-After": "0.1"}),
+    )
+    httpx_mock.add_response(url=f"{base_url}/{endpoint}", json={"data": "success"})
+    api_client = ApiClient(base_url=base_url)
 
-        response = self.api_client.call_api(endpoint)
-        self.assertEqual(response, expected_response)
-
-    @requests_mock.Mocker()
-    def test_call_api_retry(self, m):
-        """
-        Tests the retry logic for a 429 error.
-        """
-        endpoint = "test"
-        m.get(f"{self.base_url}/{endpoint}", [
-            {"status_code": 429, "headers": {"Retry-After": "1"}},
-            {"status_code": 200, "json": {"data": "success"}}
-        ])
-
-        response = self.api_client.call_api(endpoint)
-        self.assertEqual(response, {"data": "success"})
-        self.assertEqual(m.call_count, 2)
-
-if __name__ == "__main__":
-    unittest.main()
+    response = await api_client.call_api(endpoint)
+    assert response == {"data": "success"}
+    assert len(httpx_mock.get_requests()) == 2

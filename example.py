@@ -1,28 +1,33 @@
-import requests
-from data_ingestion.connectors.api_source import APIDataSource
-from data_ingestion.rate_limiting.token_bucket import TokenBucket
+import asyncio
+from data_ingestion.py.api_client import ApiClient
+from data_ingestion.py.rate_limiter import RateLimiter
+from data_ingestion.py.caching import LRUCache
+from data_ingestion.py.data_source import APIDataSource
 
-def main():
-    # Configure the rate limiter: 10 requests per 10 seconds
-    limiter = TokenBucket(10, 10)
+async def main():
+    # Configure the rate limiter: 5 calls per 1 second
+    rate_limiter = RateLimiter(calls=5, period=1)
 
-    # Create a session
-    session = requests.Session()
+    # Configure the cache: 100 items capacity
+    cache = LRUCache(capacity=100)
+
+    # Create the API client
+    api_client = ApiClient(base_url="https://jsonplaceholder.typicode.com")
 
     # Create the API data source
     api_source = APIDataSource(
-        session=session,
-        limiter=limiter,
-        endpoint="https://jsonplaceholder.typicode.com/todos/1"
+        api_client=api_client,
+        rate_limiter=rate_limiter,
+        cache=cache,
+        endpoint="todos"
     )
 
-    # Fetch data
-    try:
-        data = api_source.read(params={})
-        print("Successfully fetched data:")
-        print(data)
-    except requests.exceptions.RequestException as e:
-        print(f"An error occurred: {e}")
+    # Fetch data concurrently
+    tasks = [api_source.read(params={"id": i}) for i in range(1, 11)]
+    results = await asyncio.gather(*tasks)
+
+    for result in results:
+        print(result)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

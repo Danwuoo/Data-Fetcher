@@ -1,43 +1,37 @@
 import time
-import unittest
+import pytest
 from data_ingestion.py.rate_limiter import RateLimiter
 
-class TestRateLimiter(unittest.TestCase):
+@pytest.mark.asyncio
+async def test_rate_limiter():
     """
-    Tests for the RateLimiter class.
+    Tests that the rate limiter correctly limits the number of calls.
     """
+    limiter = RateLimiter(calls=5, period=1)
+    start_time = time.monotonic()
 
-    def test_rate_limiter(self):
-        """
-        Tests that the rate limiter correctly limits the number of calls.
-        """
-        limiter = RateLimiter(calls=5, period=1)
-        start_time = time.monotonic()
-
-        for _ in range(5):
-            limiter.check_rate()
-
-        # The 6th call should block
+    for _ in range(5):
         limiter.check_rate()
-        end_time = time.monotonic()
 
-        # The total time should be at least 1 second
-        self.assertGreaterEqual(end_time - start_time, 1)
+    # The 6th call should block
+    limiter.check_rate()
+    end_time = time.monotonic()
 
-    def test_refill(self):
-        """
-        Tests that the token bucket is refilled after the period.
-        """
-        limiter = RateLimiter(calls=5, period=1)
+    # The total time should be at least 1 second
+    assert end_time - start_time >= 1
 
-        for _ in range(5):
-            limiter.check_rate()
+@pytest.mark.asyncio
+async def test_refill():
+    """
+    Tests that the token bucket is refilled after the period.
+    """
+    limiter = RateLimiter(calls=5, period=1)
 
-        time.sleep(1)
+    for _ in range(5):
+        limiter.check_rate()
 
-        # After 1 second, the bucket should be full again
-        for _ in range(5):
-            limiter.check_rate()
+    time.sleep(1)
 
-if __name__ == "__main__":
-    unittest.main()
+    # After 1 second, the bucket should be full again
+    for _ in range(5):
+        limiter.check_rate()
