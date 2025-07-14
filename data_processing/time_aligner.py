@@ -2,6 +2,7 @@ import pandas as pd
 import pandera as pa
 from data_processing.pipeline_step import PipelineStep
 
+
 class TimeAligner(PipelineStep):
     """
     A pipeline step to align and resample a time-series DataFrame.
@@ -23,7 +24,10 @@ class TimeAligner(PipelineStep):
         output_schema = pa.DataFrameSchema({
             time_column: pa.Column(pa.DateTime),
         })
-        super().__init__(input_schema=input_schema, output_schema=output_schema)
+        super().__init__(
+            input_schema=input_schema,
+            output_schema=output_schema,
+        )
 
     def process(self, df: pd.DataFrame) -> pd.DataFrame:
         """

@@ -2,6 +2,7 @@ import pytest
 from httpx import Response
 from data_ingestion.py.api_client import ApiClient
 
+
 @pytest.mark.asyncio
 async def test_call_api_success(httpx_mock):
     """
@@ -10,10 +11,14 @@ async def test_call_api_success(httpx_mock):
     base_url = "http://test.com"
     endpoint = "test"
     expected_response = {"data": "success"}
-    httpx_mock.add_response(url=f"{base_url}/{endpoint}", json=expected_response)
+    httpx_mock.add_response(
+        url=f"{base_url}/{endpoint}",
+        json=expected_response,
+    )
     async with ApiClient(base_url=base_url) as api_client:
         response = await api_client.call_api(endpoint)
     assert response == expected_response
+
 
 @pytest.mark.asyncio
 async def test_call_api_retry(httpx_mock):
@@ -25,9 +30,11 @@ async def test_call_api_retry(httpx_mock):
     httpx_mock.add_callback(
         lambda request, ext: Response(429, headers={"Retry-After": "0.1"}),
     )
-    httpx_mock.add_response(url=f"{base_url}/{endpoint}", json={"data": "success"})
+    httpx_mock.add_response(
+        url=f"{base_url}/{endpoint}",
+        json={"data": "success"},
+    )
     async with ApiClient(base_url=base_url) as api_client:
         response = await api_client.call_api(endpoint)
         assert response == {"data": "success"}
         assert len(httpx_mock.get_requests()) == 2
-

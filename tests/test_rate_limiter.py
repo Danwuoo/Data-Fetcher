@@ -3,6 +3,7 @@ import asyncio
 import pytest
 from data_ingestion.py.rate_limiter import RateLimiter
 
+
 @pytest.mark.asyncio
 async def test_rate_limiter():
     """
@@ -20,6 +21,7 @@ async def test_rate_limiter():
 
     # The total time should be at least 1 second
     assert end_time - start_time >= 1
+
 
 @pytest.mark.asyncio
 async def test_refill():

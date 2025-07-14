@@ -1,12 +1,17 @@
 import pandas as pd
 from data_processing.pipeline_step import PipelineStep
 
+
 class DataCleanser(PipelineStep):
     """
     A pipeline step to clean data.
     """
 
-    def __init__(self, remove_outliers: bool = False, outlier_threshold: float = 1.5):
+    def __init__(
+        self,
+        remove_outliers: bool = False,
+        outlier_threshold: float = 1.5,
+    ):
         """
         Initializes the DataCleanser.
 
@@ -38,6 +43,9 @@ class DataCleanser(PipelineStep):
                 iqr = q3 - q1
                 lower_bound = q1 - self.outlier_threshold * iqr
                 upper_bound = q3 + self.outlier_threshold * iqr
-                processed_df = processed_df[(processed_df[column] >= lower_bound) & (processed_df[column] <= upper_bound)]
+                processed_df = processed_df[
+                    (processed_df[column] >= lower_bound)
+                    & (processed_df[column] <= upper_bound)
+                ]
 
         return self._validate_output(processed_df)

@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 
+
 def save_to_staging(df: pd.DataFrame, path: str):
     """
     Saves a DataFrame to the staging area.
@@ -11,6 +12,7 @@ def save_to_staging(df: pd.DataFrame, path: str):
     """
     os.makedirs(os.path.dirname(path), exist_ok=True)
     df.to_parquet(path)
+
 
 def load_from_staging(path: str) -> pd.DataFrame:
     """

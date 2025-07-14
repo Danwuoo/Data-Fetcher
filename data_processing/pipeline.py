@@ -1,6 +1,7 @@
 import pandas as pd
 from data_processing.pipeline_step import PipelineStep
 
+
 class Pipeline:
     """
     A data processing pipeline.

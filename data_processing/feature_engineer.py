@@ -1,6 +1,7 @@
 import pandas as pd
 from data_processing.pipeline_step import PipelineStep
 
+
 class FeatureEngineer(PipelineStep):
     """
     A pipeline step to create new features in a DataFrame.
@@ -31,7 +32,9 @@ class FeatureEngineer(PipelineStep):
         processed_df = df.copy()
         for feature in self.features_to_create:
             if feature == 'moving_average':
-                processed_df['moving_average'] = processed_df['close'].rolling(window=5).mean()
+                processed_df['moving_average'] = (
+                    processed_df['close'].rolling(window=5).mean()
+                )
             else:
                 raise ValueError(f"Unknown feature: {feature}")
         return self._validate_output(processed_df)

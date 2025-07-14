@@ -2,12 +2,17 @@ from abc import ABC, abstractmethod
 import pandas as pd
 import pandera as pa
 
+
 class PipelineStep(ABC):
     """
     A base class for a step in a data processing pipeline.
     """
 
-    def __init__(self, input_schema: pa.DataFrameSchema = None, output_schema: pa.DataFrameSchema = None):
+    def __init__(
+        self,
+        input_schema: pa.DataFrameSchema = None,
+        output_schema: pa.DataFrameSchema = None,
+    ):
         """
         Initializes the PipelineStep.
 

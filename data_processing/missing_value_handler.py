@@ -1,6 +1,7 @@
 import pandas as pd
 from data_processing.pipeline_step import PipelineStep
 
+
 class MissingValueHandler(PipelineStep):
     """
     A pipeline step to handle missing values in a DataFrame.
