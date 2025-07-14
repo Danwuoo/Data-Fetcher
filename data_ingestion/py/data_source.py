@@ -32,12 +32,13 @@ class APIDataSource:
         Returns:
             The data from the API.
         """
-        cache_key = f"{self.endpoint}:{params}"
+        param_tuple = tuple(sorted(params.items())) if params else None
+        cache_key = f"{self.endpoint}:{param_tuple}"
         cached_data = await self.cache.get(cache_key)
         if cached_data is not None:
             return cached_data
 
-        self.rate_limiter.check_rate()
+        await self.rate_limiter.acquire()
         data = await self.api_client.call_api(self.endpoint, params)
         await self.cache.set(cache_key, data)
         return data

@@ -22,7 +22,7 @@ async def test_read_from_cache():
         endpoint=endpoint
     )
     params = {"param": "value"}
-    cache_key = f"{endpoint}:{params}"
+    cache_key = f"{endpoint}:{tuple(sorted(params.items()))}"
     expected_data = {"data": "test"}
     cache.get.return_value = expected_data
 
@@ -30,7 +30,7 @@ async def test_read_from_cache():
 
     assert data == expected_data
     cache.get.assert_called_once_with(cache_key)
-    rate_limiter.check_rate.assert_not_called()
+    rate_limiter.acquire.assert_not_called()
     api_client.call_api.assert_not_called()
 
 @pytest.mark.asyncio
@@ -51,7 +51,7 @@ async def test_read_from_api():
         endpoint=endpoint
     )
     params = {"param": "value"}
-    cache_key = f"{endpoint}:{params}"
+    cache_key = f"{endpoint}:{tuple(sorted(params.items()))}"
     expected_data = {"data": "test"}
     cache.get.return_value = None
     api_client.call_api.return_value = expected_data
@@ -60,6 +60,6 @@ async def test_read_from_api():
 
     assert data == expected_data
     cache.get.assert_called_once_with(cache_key)
-    rate_limiter.check_rate.assert_called_once()
+    rate_limiter.acquire.assert_called_once()
     api_client.call_api.assert_called_once_with(endpoint, params)
     cache.set.assert_called_once_with(cache_key, expected_data)

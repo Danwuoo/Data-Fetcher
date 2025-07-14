@@ -49,9 +49,6 @@ class LRUCache:
             if len(self.cache) > self.capacity:
                 self.cache.popitem(last=False)
 
-    async def __contains__(self, key: str) -> bool:
-        """
-        Checks if a key is in the cache.
-        """
-        async with self.lock:
-            return key in self.cache
+    def __contains__(self, key: str) -> bool:
+        """判斷 key 是否存在於快取中。"""
+        return key in self.cache

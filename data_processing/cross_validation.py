@@ -1,4 +1,3 @@
-import pandas as pd
 from sklearn.model_selection import KFold
 
 def purged_k_fold(n_splits: int, n_samples: int, embargo: int):
