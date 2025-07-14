@@ -8,14 +8,23 @@ class ApiClient:
     """
 
     def __init__(self, base_url: str):
-        """
-        Initializes the ApiClient.
+        """初始化 ApiClient。
 
         Args:
-            base_url: The base URL for the API.
+            base_url: API 的基底網址
         """
         self.base_url = base_url
+        self.session: httpx.AsyncClient | None = None
+
+    async def __aenter__(self):
+        """建立並回傳非同步 HTTP session。"""
         self.session = httpx.AsyncClient()
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        """關閉 HTTP session。"""
+        if self.session:
+            await self.session.aclose()
 
     @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
     async def call_api(self, endpoint: str, params: dict = None):
@@ -29,6 +38,8 @@ class ApiClient:
         Returns:
             The JSON response from the API.
         """
+        if self.session is None:
+            self.session = httpx.AsyncClient()
         url = f"{self.base_url}/{endpoint}"
         try:
             response = await self.session.get(url, params=params)

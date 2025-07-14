@@ -1,5 +1,4 @@
 import pandas as pd
-import pandera as pa
 from data_processing.pipeline_step import PipelineStep
 
 class FeatureEngineer(PipelineStep):
