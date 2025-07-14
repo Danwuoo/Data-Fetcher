@@ -1,26 +1,26 @@
-from ratelimit import limits, sleep_and_retry
+import asyncio
+import time
 
 class RateLimiter:
-    """
-    A rate limiter using the ratelimit library.
-    """
+    """非同步 token bucket 速率限制器。"""
 
-    def __init__(self, calls: int, period: int):
-        """
-        Initializes the RateLimiter.
+    def __init__(self, calls: int, period: float):
+        self.calls = calls
+        self.period = period
+        self._lock = asyncio.Lock()
+        self._calls_made = 0
+        self._period_start = time.monotonic()
 
-        Args:
-            calls: The number of calls allowed per period.
-            period: The time period in seconds.
-        """
-        self.limiter = limits(calls=calls, period=period)
-
-    def check_rate(self):
-        """
-        Applies the rate limit.
-        """
-        @sleep_and_retry
-        @self.limiter
-        def _check_rate():
-            pass
-        _check_rate()
+    async def acquire(self):
+        """等待直到可執行下一次請求。"""
+        async with self._lock:
+            now = time.monotonic()
+            elapsed = now - self._period_start
+            if elapsed >= self.period:
+                self._calls_made = 0
+                self._period_start = now
+            if self._calls_made >= self.calls:
+                await asyncio.sleep(self.period - elapsed)
+                self._calls_made = 0
+                self._period_start = time.monotonic()
+            self._calls_made += 1

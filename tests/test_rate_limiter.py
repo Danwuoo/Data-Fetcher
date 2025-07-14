@@ -1,4 +1,5 @@
 import time
+import asyncio
 import pytest
 from data_ingestion.py.rate_limiter import RateLimiter
 
@@ -11,10 +12,10 @@ async def test_rate_limiter():
     start_time = time.monotonic()
 
     for _ in range(5):
-        limiter.check_rate()
+        await limiter.acquire()
 
     # The 6th call should block
-    limiter.check_rate()
+    await limiter.acquire()
     end_time = time.monotonic()
 
     # The total time should be at least 1 second
@@ -28,10 +29,10 @@ async def test_refill():
     limiter = RateLimiter(calls=5, period=1)
 
     for _ in range(5):
-        limiter.check_rate()
+        await limiter.acquire()
 
-    time.sleep(1)
+    await asyncio.sleep(1)
 
     # After 1 second, the bucket should be full again
     for _ in range(5):
-        limiter.check_rate()
+        await limiter.acquire()
