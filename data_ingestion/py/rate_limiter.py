@@ -1,6 +1,7 @@
 import asyncio
 import time
 
+
 class RateLimiter:
     """非同步 token bucket 速率限制器。"""
 

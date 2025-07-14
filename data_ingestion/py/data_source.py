@@ -2,18 +2,27 @@ from data_ingestion.py.api_client import ApiClient
 from data_ingestion.py.rate_limiter import RateLimiter
 from data_ingestion.py.caching import LRUCache
 
+
 class APIDataSource:
     """
-    A data source that uses an API to fetch data, with rate limiting and caching.
+    A data source that uses an API to fetch data, with rate limiting and
+    caching.
     """
 
-    def __init__(self, api_client: ApiClient, rate_limiter: RateLimiter, cache: LRUCache, endpoint: str):
+    def __init__(
+        self,
+        api_client: ApiClient,
+        rate_limiter: RateLimiter,
+        cache: LRUCache,
+        endpoint: str,
+    ):
         """
         Initializes the APIDataSource.
 
         Args:
             api_client: The API client to use for fetching data.
-            rate_limiter: The rate limiter to use for controlling the request rate.
+            rate_limiter: The rate limiter to use for controlling the request
+                rate.
             cache: The cache to use for storing fetched data.
             endpoint: The API endpoint to fetch data from.
         """

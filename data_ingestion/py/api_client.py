@@ -2,6 +2,7 @@ import httpx
 import asyncio
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 
+
 class ApiClient:
     """
     A simple asynchronous API client with retry logic.
@@ -26,7 +27,10 @@ class ApiClient:
         if self.session:
             await self.session.aclose()
 
-    @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
+    @retry(
+        wait=wait_random_exponential(min=1, max=60),
+        stop=stop_after_attempt(6),
+    )
     async def call_api(self, endpoint: str, params: dict = None):
         """
         Calls an API endpoint asynchronously.

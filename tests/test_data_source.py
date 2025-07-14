@@ -5,6 +5,7 @@ from data_ingestion.py.api_client import ApiClient
 from data_ingestion.py.rate_limiter import RateLimiter
 from data_ingestion.py.caching import LRUCache
 
+
 @pytest.mark.asyncio
 async def test_read_from_cache():
     """
@@ -32,6 +33,7 @@ async def test_read_from_cache():
     cache.get.assert_called_once_with(cache_key)
     rate_limiter.acquire.assert_not_called()
     api_client.call_api.assert_not_called()
+
 
 @pytest.mark.asyncio
 async def test_read_from_api():

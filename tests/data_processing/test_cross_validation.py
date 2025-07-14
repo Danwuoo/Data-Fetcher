@@ -1,6 +1,7 @@
 import unittest
 from data_processing.cross_validation import purged_k_fold
 
+
 class TestPurgedKFold(unittest.TestCase):
     def test_embargo_before_and_after(self):
         splits = list(purged_k_fold(n_splits=3, n_samples=12, embargo=2))
@@ -24,6 +25,7 @@ class TestPurgedKFold(unittest.TestCase):
         self.assertNotIn(6, train2)
         self.assertNotIn(7, train2)
         self.assertTrue(all(idx <= 5 for idx in train2))
+
 
 if __name__ == '__main__':
     unittest.main()
