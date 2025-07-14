@@ -17,7 +17,13 @@ class TimeAligner(PipelineStep):
         """
         self.resample_rule = resample_rule
         self.time_column = time_column
-        super().__init__()
+        input_schema = pa.DataFrameSchema({
+            time_column: pa.Column(pa.DateTime)
+        })
+        output_schema = pa.DataFrameSchema({
+            time_column: pa.Column(pa.DateTime),
+        })
+        super().__init__(input_schema=input_schema, output_schema=output_schema)
 
     def process(self, df: pd.DataFrame) -> pd.DataFrame:
         """
