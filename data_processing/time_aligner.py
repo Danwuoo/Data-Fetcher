@@ -1,0 +1,36 @@
+import pandas as pd
+import pandera as pa
+from data_processing.pipeline_step import PipelineStep
+
+class TimeAligner(PipelineStep):
+    """
+    A pipeline step to align and resample a time-series DataFrame.
+    """
+
+    def __init__(self, resample_rule: str, time_column: str = 'timestamp'):
+        """
+        Initializes the TimeAligner.
+
+        Args:
+            resample_rule: The resampling rule (e.g., '1T' for 1 minute).
+            time_column: The name of the time column.
+        """
+        self.resample_rule = resample_rule
+        self.time_column = time_column
+        super().__init__()
+
+    def process(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Aligns and resamples a time-series DataFrame.
+
+        Args:
+            df: The DataFrame to process.
+
+        Returns:
+            The processed DataFrame.
+        """
+        df = self._validate_input(df)
+        df[self.time_column] = pd.to_datetime(df[self.time_column])
+        df = df.set_index(self.time_column)
+        processed_df = df.resample(self.resample_rule).mean()
+        return self._validate_output(processed_df.reset_index())
