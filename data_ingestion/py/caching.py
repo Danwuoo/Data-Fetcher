@@ -1,19 +1,23 @@
 import asyncio
+import time
 from collections import OrderedDict
+
 
 class LRUCache:
     """
     A simple in-memory LRU cache.
     """
 
-    def __init__(self, capacity: int):
+    def __init__(self, capacity: int, ttl: float | None = None):
         """
         Initializes the LRUCache.
 
         Args:
             capacity: The maximum number of items to store in the cache.
+            ttl: 選擇性的存活時間（秒），設定後超過時間即會自動失效。
         """
         self.capacity = capacity
+        self.ttl = ttl
         self.cache = OrderedDict()
         self.lock = asyncio.Lock()
 
@@ -30,9 +34,18 @@ class LRUCache:
         async with self.lock:
             if key not in self.cache:
                 return None
-            else:
-                self.cache.move_to_end(key)
-                return self.cache[key]
+
+            value, inserted_at = self.cache[key]
+            expired = self.ttl is not None and (
+                time.monotonic() - inserted_at > self.ttl
+            )
+            if expired:
+                # 已過期，刪除並回傳 None
+                del self.cache[key]
+                return None
+
+            self.cache.move_to_end(key)
+            return value
 
     async def set(self, key: str, value):
         """
@@ -45,10 +58,22 @@ class LRUCache:
         async with self.lock:
             if key in self.cache:
                 self.cache.move_to_end(key)
-            self.cache[key] = value
+
+            # 將值與插入時間一起存入
+            self.cache[key] = (value, time.monotonic())
             if len(self.cache) > self.capacity:
                 self.cache.popitem(last=False)
 
     def __contains__(self, key: str) -> bool:
-        """判斷 key 是否存在於快取中。"""
-        return key in self.cache
+        """判斷 key 是否存在於快取中，同時檢查是否過期。"""
+        if key not in self.cache:
+            return False
+
+        value, inserted_at = self.cache[key]
+        expired = self.ttl is not None and (
+            time.monotonic() - inserted_at > self.ttl
+        )
+        if expired:
+            del self.cache[key]
+            return False
+        return True
