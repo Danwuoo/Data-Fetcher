@@ -5,6 +5,8 @@ import hashlib
 import os
 from collections import deque
 import json
+from typing import Any, cast
+
 import pandas as pd
 import yaml
 
@@ -23,7 +25,7 @@ class StorageBackend(ABC):
 
     @abstractmethod
     def write(
-        self, df: pd.DataFrame, table: str, *, metadata: dict | None = None
+        self, df: pd.DataFrame, table: str, *, metadata: dict[str, object] | None = None
     ) -> None:
         """寫入資料到指定表格，metadata 可附帶額外資訊。"""
         raise NotImplementedError
@@ -46,7 +48,7 @@ class DuckHot(StorageBackend):
         self._tables: dict[str, pd.DataFrame] = {}
 
     def write(
-        self, df: pd.DataFrame, table: str, *, metadata: dict | None = None
+        self, df: pd.DataFrame, table: str, *, metadata: dict[str, object] | None = None
     ) -> None:
         self._tables[table] = (
             pd.concat([self._tables[table], df], ignore_index=True)
@@ -70,7 +72,7 @@ class TimescaleWarm(StorageBackend):
         self._tables: dict[str, pd.DataFrame] = {}
 
     def write(
-        self, df: pd.DataFrame, table: str, *, metadata: dict | None = None
+        self, df: pd.DataFrame, table: str, *, metadata: dict[str, object] | None = None
     ) -> None:
         self._tables[table] = (
             pd.concat([self._tables[table], df], ignore_index=True)
@@ -94,7 +96,7 @@ class S3Cold(StorageBackend):
         self._tables: dict[str, pd.DataFrame] = {}
 
     def write(
-        self, df: pd.DataFrame, table: str, *, metadata: dict | None = None
+        self, df: pd.DataFrame, table: str, *, metadata: dict[str, object] | None = None
     ) -> None:
         self._tables[table] = (
             pd.concat([self._tables[table], df], ignore_index=True)
@@ -133,18 +135,18 @@ class HybridStorageManager(StorageBackend):
         self.warm_store = warm_store or TimescaleWarm()
         self.cold_store = cold_store or S3Cold()
         self.catalog = catalog or Catalog()
-        self.tier_order: list[str] = config.get(
-            "tier_order", ["hot", "warm", "cold"]
+        self.tier_order: list[str] = cast(
+            list[str], config.get("tier_order", ["hot", "warm", "cold"])
         )
         self.hot_capacity = (
             hot_capacity
             if hot_capacity is not None
-            else int(config.get("hot_capacity", 3))
+            else int(cast(Any, config.get("hot_capacity", 3)))
         )
         self.warm_capacity = (
             warm_capacity
             if warm_capacity is not None
-            else int(config.get("warm_capacity", 5))
+            else int(cast(Any, config.get("warm_capacity", 5)))
         )
         self._hot_lru: deque[str] = deque()
         self._warm_lru: deque[str] = deque()
@@ -164,10 +166,10 @@ class HybridStorageManager(StorageBackend):
         lru.append(table)
 
     def _check_capacity(self) -> None:
-        while len(self.hot_store._tables) > self.hot_capacity:
+        while len(cast(DuckHot, self.hot_store)._tables) > self.hot_capacity:
             oldest = self._hot_lru.popleft()
             self.migrate(oldest, "hot", "warm")
-        while len(self.warm_store._tables) > self.warm_capacity:
+        while len(cast(TimescaleWarm, self.warm_store)._tables) > self.warm_capacity:
             oldest = self._warm_lru.popleft()
             self.migrate(oldest, "warm", "cold")
 
@@ -175,18 +177,17 @@ class HybridStorageManager(StorageBackend):
         self,
         df: pd.DataFrame,
         table: str,
-        tier: str = "hot",
         *,
+        tier: str = "hot",
         lineage_id: str | None = None,
+        metadata: dict[str, object] | None = None,
     ) -> None:
         backend = self._backend_for(tier)
+        meta = metadata.copy() if metadata else {}
         if lineage_id:
             df.attrs["lineage_id"] = lineage_id
-        backend.write(
-            df,
-            table,
-            metadata={"lineage_id": lineage_id} if lineage_id else None,
-        )
+            meta["lineage_id"] = lineage_id
+        backend.write(df, table, metadata=meta or None)
         STORAGE_WRITE_COUNTER.labels(tier=tier).inc()
 
         schema_hash = hashlib.sha256(str(df.dtypes.to_dict()).encode()).hexdigest()
@@ -217,7 +218,7 @@ class HybridStorageManager(StorageBackend):
         self._check_capacity()
 
     def read(
-        self, table: str, tiers: list[str] | None = None
+        self, table: str, *, tiers: list[str] | None = None
     ) -> pd.DataFrame:
         tiers = tiers or self.tier_order
         for tier in tiers:

@@ -1,8 +1,14 @@
-from sklearn.model_selection import KFold
+from __future__ import annotations
+
 from itertools import combinations
+from typing import Iterator
+
+from sklearn.model_selection import KFold
 
 
-def purged_k_fold(n_splits: int, n_samples: int, embargo: int):
+def purged_k_fold(
+    n_splits: int, n_samples: int, embargo: int
+) -> Iterator[tuple[list[int], list[int]]]:
     """
     Purged K-Fold Cross-Validation。
 
@@ -27,7 +33,7 @@ def purged_k_fold(n_splits: int, n_samples: int, embargo: int):
         after_end = min(n_samples - 1, test_end + embargo)
 
         # 建立需排除的索引集合
-        embargo_indices = (
+        embargo_indices: set[int] = (
             set(range(before_start, before_end + 1))
             | set(range(after_start, after_end + 1))
         )
@@ -41,7 +47,7 @@ def combinatorial_purged_cv(
     n_samples: int,
     n_test_splits: int,
     embargo: int,
-):
+) -> Iterator[tuple[list[int], list[int]]]:
     """
     組合式 Purged Cross-Validation。
 
@@ -65,7 +71,7 @@ def combinatorial_purged_cv(
 
     for combo in combinations(range(n_splits), n_test_splits):
         test_indices = sorted([i for idx in combo for i in folds[idx]])
-        embargo_indices = set()
+        embargo_indices: set[int] = set()
         for idx in combo:
             start = folds[idx][0]
             end = folds[idx][-1]
@@ -82,7 +88,9 @@ def combinatorial_purged_cv(
         yield train_indices, test_indices
 
 
-def walk_forward_split(n_samples: int, train_size: int, test_size: int, step_size: int):
+def walk_forward_split(
+    n_samples: int, train_size: int, test_size: int, step_size: int
+) -> Iterator[tuple[list[int], list[int]]]:
     """
     Walk-Forward 時間序列切分。
 

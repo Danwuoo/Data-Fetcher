@@ -3,6 +3,7 @@ import os
 import time
 import weakref
 import yaml
+from typing import Any, cast
 from data_ingestion.metrics import REMAINING_GAUGE, RATE_LIMIT_429_COUNTER
 
 # 追蹤所有已建立的 RateLimiter，方便統一重新載入設定
@@ -69,7 +70,7 @@ class RateLimiter:
         self.period = main.period
         self.burst = main.burst
 
-    async def acquire(self):
+    async def acquire(self) -> None:
         """等待直到所有速限都允許執行下一次請求。"""
         while True:
             async with self._lock:
@@ -106,7 +107,7 @@ class RateLimiter:
         with open(self.config_path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
 
-        configs: list[dict] = []
+        configs: list[dict[str, object]] = []
         if "global" in data:
             configs.append(data["global"])
         if self.api_key:
@@ -117,9 +118,9 @@ class RateLimiter:
         if configs:
             self.buckets = [
                 _TokenBucket(
-                    c.get("calls", 1),
-                    c.get("period", 1.0),
-                    c.get("burst", c.get("calls", 1)),
+                    int(cast(Any, c.get("calls", 1))),
+                    float(cast(Any, c.get("period", 1.0))),
+                    int(cast(Any, c.get("burst", c.get("calls", 1)))),
                 )
                 for c in configs
             ]
