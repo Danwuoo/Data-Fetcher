@@ -15,18 +15,23 @@ class ApiClient:
         limiters: dict[str, RateLimiter] | None = None,
         default_limiter: RateLimiter | None = None,
         proxy_base_url: str | None = None,
+        max_concurrency: int | None = None,
     ):
         """初始化 ApiClient。
 
         Args:
             base_url: API 的基底網址
             proxy_base_url: 若提供則透過此 proxy 轉發請求
+            max_concurrency: 同時允許的最大 API 連線數，``None`` 表示不限制
         """
         self.base_url = base_url
         self.proxy_base_url = proxy_base_url
         self.session: httpx.AsyncClient | None = None
         self.limiters = limiters or {}
         self.default_limiter = default_limiter
+        self.semaphore = (
+            asyncio.Semaphore(max_concurrency) if max_concurrency else None
+        )
 
     async def __aenter__(self):
         """建立並回傳非同步 HTTP session。"""
@@ -62,11 +67,10 @@ class ApiClient:
         if self.proxy_base_url:
             url = f"{self.proxy_base_url}/{endpoint}"
         try:
-            response = await self.session.get(url, params=params)
-            response.raise_for_status()
-            if limiter:
-                limiter.record_failure()
-            return response.json()
+            if self.semaphore:
+                async with self.semaphore:
+                    return await self._execute_request(url, params, limiter)
+            return await self._execute_request(url, params, limiter)
         except httpx.HTTPStatusError as e:
             if limiter and e.response.status_code == 429:
                 retry_after = int(e.response.headers.get("Retry-After", 0))
@@ -78,3 +82,23 @@ class ApiClient:
             if limiter:
                 limiter.record_failure(timeout=True)
             raise
+
+    async def _execute_request(
+        self,
+        url: str,
+        params: dict | None,
+        limiter: RateLimiter | None,
+    ):
+        """實際執行 HTTP 請求並處理例外。"""
+        response = await self.session.get(url, params=params)
+        response.raise_for_status()
+        if limiter:
+            limiter.record_failure()
+        return response.json()
+
+    async def call_batch(self, endpoints: list[tuple[str, dict]]):
+        """批次呼叫多個 API，遵守最大併發限制。"""
+        tasks = [
+            asyncio.create_task(self.call_api(ep, params)) for ep, params in endpoints
+        ]
+        return await asyncio.gather(*tasks)
