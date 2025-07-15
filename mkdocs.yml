@@ -5,6 +5,7 @@ nav:
   - 指南:
       - 多層級儲存: data_storage.md
       - 監控與警報設定: monitoring.md
+      - 增量處理 Runner: incremental_runner.md
   - API:
       - Data Storage: reference/data_storage.md
       - Data Ingestion: reference/data_ingestion.md
