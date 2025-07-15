@@ -41,3 +41,19 @@ zxq storage migrate --table prices --to warm
 ```
 
 加入 `--dry-run` 參數則僅顯示預計動作而不實際執行。
+
+## 命中率統計與自動遷移
+
+`HybridStorageManager` 會記錄每個表格的讀取時間。預設每天由 Prefect 任務
+計算近七日的命中次數，若 Hot tier 使用率超過 `hot_usage_threshold` 且
+某表格的七日讀取次數低於 `low_hit_threshold`，系統會將其自動遷移至
+Warm 或 Cold 層級。相關參數可於 `storage.yaml` 中調整：
+
+```yaml
+low_hit_threshold: 2
+hot_usage_threshold: 0.8
+hit_stats_schedule: "0 1 * * *"
+```
+
+`pipelines/hit_stats.py` 已提供示範 Flow，可透過 `prefect deployment build`
+產生部署檔後排程執行。
