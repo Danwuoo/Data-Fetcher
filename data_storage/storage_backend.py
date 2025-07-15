@@ -3,9 +3,10 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import hashlib
 import os
-from collections import deque
+from collections import deque, defaultdict
 import json
-from typing import Any, cast
+from typing import Any, cast, DefaultDict
+from datetime import datetime, timedelta
 
 import pandas as pd
 import yaml
@@ -216,6 +217,8 @@ class HybridStorageManager(StorageBackend):
         catalog: Catalog | None = None,
         hot_capacity: int | None = None,
         warm_capacity: int | None = None,
+        low_hit_threshold: int | None = None,
+        hot_usage_threshold: float | None = None,
         config_path: str = "storage.yaml",
     ) -> None:
         config: dict[str, object] = {}
@@ -245,8 +248,22 @@ class HybridStorageManager(StorageBackend):
             if warm_capacity is not None
             else int(cast(Any, config.get("warm_capacity", 5)))
         )
+        self.low_hit_threshold = (
+            low_hit_threshold
+            if low_hit_threshold is not None
+            else int(cast(Any, config.get("low_hit_threshold", 0)))
+        )
+        self.hot_usage_threshold = (
+            hot_usage_threshold
+            if hot_usage_threshold is not None
+            else float(cast(Any, config.get("hot_usage_threshold", 0.8)))
+        )
+        self.hit_stats_schedule = cast(
+            str, config.get("hit_stats_schedule", "0 1 * * *")
+        )
         self._hot_lru: deque[str] = deque()
         self._warm_lru: deque[str] = deque()
+        self.access_log: DefaultDict[str, deque[datetime]] = defaultdict(deque)
 
     def _backend_for(self, tier: str) -> StorageBackend:
         if tier == "hot":
@@ -262,6 +279,10 @@ class HybridStorageManager(StorageBackend):
             lru.remove(table)
         lru.append(table)
 
+    def _record_access(self, table: str) -> None:
+        """記錄資料表存取時間以便統計命中率。"""
+        self.access_log[table].append(datetime.utcnow())
+
     def _check_capacity(self) -> None:
         while len(cast(DuckHot, self.hot_store)._tables) > self.hot_capacity:
             oldest = self._hot_lru.popleft()
@@ -269,6 +290,32 @@ class HybridStorageManager(StorageBackend):
         while len(cast(TimescaleWarm, self.warm_store)._tables) > self.warm_capacity:
             oldest = self._warm_lru.popleft()
             self.migrate(oldest, "warm", "cold")
+
+    def compute_7day_hits(self) -> dict[str, int]:
+        """計算最近七天每個表格的讀取次數。"""
+        cutoff = datetime.utcnow() - timedelta(days=7)
+        stats: dict[str, int] = {}
+        for table, times in self.access_log.items():
+            while times and times[0] < cutoff:
+                times.popleft()
+            stats[table] = len(times)
+        return stats
+
+    def migrate_low_hit_tables(self) -> None:
+        """根據命中率與容量閾值自動下移低頻表格。"""
+        usage = len(cast(DuckHot, self.hot_store)._tables) / max(self.hot_capacity, 1)
+        if usage <= self.hot_usage_threshold:
+            return
+        stats = self.compute_7day_hits()
+        for table in list(cast(DuckHot, self.hot_store)._tables):
+            if stats.get(table, 0) < self.low_hit_threshold:
+                target = "warm"
+                if (
+                    len(cast(TimescaleWarm, self.warm_store)._tables)
+                    >= self.warm_capacity
+                ):
+                    target = "cold"
+                self.migrate(table, "hot", target)
 
     def write(
         self,
@@ -324,6 +371,7 @@ class HybridStorageManager(StorageBackend):
                 result = backend.read(table)
                 STORAGE_READ_COUNTER.labels(tier=tier).inc()
                 update_tier_hit_rate()
+                self._record_access(table)
                 return result
             except KeyError:
                 continue
