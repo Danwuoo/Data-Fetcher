@@ -3,6 +3,7 @@ from data_ingestion.metrics import (
     REQUEST_COUNTER,
     RATE_LIMIT_429_COUNTER,
     REMAINING_GAUGE,
+    CACHE_HIT_RATIO,
 )
 
 
@@ -36,6 +37,7 @@ __all__ = [
     "REQUEST_COUNTER",
     "RATE_LIMIT_429_COUNTER",
     "REMAINING_GAUGE",
+    "CACHE_HIT_RATIO",
     "PROCESSING_STEP_COUNTER",
     "STORAGE_WRITE_COUNTER",
     "STORAGE_READ_COUNTER",

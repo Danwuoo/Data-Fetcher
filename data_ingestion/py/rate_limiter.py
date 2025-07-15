@@ -1,8 +1,12 @@
 import asyncio
 import os
 import time
+import weakref
 import yaml
 from data_ingestion.metrics import REMAINING_GAUGE, RATE_LIMIT_429_COUNTER
+
+# 追蹤所有已建立的 RateLimiter，方便統一重新載入設定
+_ACTIVE_LIMITERS: "weakref.WeakSet[RateLimiter]" = weakref.WeakSet()
 
 
 class _TokenBucket:
@@ -50,6 +54,8 @@ class RateLimiter:
         if additional_limits:
             for c, p, b in additional_limits:
                 self.buckets.append(_TokenBucket(c, p, b))
+
+        _ACTIVE_LIMITERS.add(self)
 
         self._config_mtime = None
         if config_path and os.path.exists(config_path):
@@ -141,6 +147,11 @@ class RateLimiter:
             self.fail_count = 0
             self._update_attrs()
 
+    @property
+    def remaining_tokens(self) -> float:
+        """取得主要 Bucket 的剩餘 token 數。"""
+        return self.buckets[0].tokens
+
     @classmethod
     def from_config(
         cls,
@@ -200,3 +211,13 @@ class RateLimiter:
             endpoint=endpoint,
             config_path=config_path,
         )
+
+
+def reload_limits() -> None:
+    """重新載入所有活躍 RateLimiter 的設定檔。"""
+
+    for limiter in list(_ACTIVE_LIMITERS):
+        limiter._reload_if_needed()
+
+
+__all__ = ["RateLimiter", "reload_limits"]

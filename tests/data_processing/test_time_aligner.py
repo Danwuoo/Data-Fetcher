@@ -1,6 +1,6 @@
 import unittest
 import pandas as pd
-from data_processing.time_aligner import TimeAligner
+from zxq.pipeline.steps.time_aligner import TimeAligner
 
 
 class TestTimeAligner(unittest.TestCase):

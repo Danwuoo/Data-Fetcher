@@ -24,5 +24,7 @@ jobs:
           pip install flake8 pytest pytest-cov
       - name: 執行 Flake8
         run: flake8 .
+      - name: 驗證 steps.yaml
+        run: python -m zxq.pipeline.loader steps.yaml
       - name: 執行 pytest
         run: pytest --cov
