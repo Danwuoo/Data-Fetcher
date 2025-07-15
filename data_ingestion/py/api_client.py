@@ -14,13 +14,16 @@ class ApiClient:
         base_url: str,
         limiters: dict[str, RateLimiter] | None = None,
         default_limiter: RateLimiter | None = None,
+        proxy_base_url: str | None = None,
     ):
         """初始化 ApiClient。
 
         Args:
             base_url: API 的基底網址
+            proxy_base_url: 若提供則透過此 proxy 轉發請求
         """
         self.base_url = base_url
+        self.proxy_base_url = proxy_base_url
         self.session: httpx.AsyncClient | None = None
         self.limiters = limiters or {}
         self.default_limiter = default_limiter
@@ -56,6 +59,8 @@ class ApiClient:
         if limiter:
             await limiter.acquire()
         url = f"{self.base_url}/{endpoint}"
+        if self.proxy_base_url:
+            url = f"{self.proxy_base_url}/{endpoint}"
         try:
             response = await self.session.get(url, params=params)
             response.raise_for_status()
