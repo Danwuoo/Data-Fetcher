@@ -12,4 +12,5 @@ flake8
 pyyaml
 fastapi
 
+prefect
 prometheus-client

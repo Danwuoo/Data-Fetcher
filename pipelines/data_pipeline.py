@@ -1,0 +1,30 @@
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Iterable
+
+import pandas as pd
+from prefect import flow, task, get_run_logger
+
+from data_processing.pipeline import Pipeline
+from data_processing.data_cleanser import DataCleanser
+from data_processing.feature_engineer import FeatureEngineer
+
+
+@task
+def run_pipeline(df: pd.DataFrame, steps: Iterable) -> pd.DataFrame:
+    """執行 Pipeline 並記錄時間與資料筆數"""
+    logger = get_run_logger()
+    pipeline = Pipeline(list(steps))
+    start = datetime.now()
+    result = pipeline.process(df)
+    duration = (datetime.now() - start).total_seconds()
+    logger.info(f"處理完成，共 {len(result)} rows，耗時 {duration:.2f}s")
+    return result
+
+
+@flow
+def data_pipeline_flow(df: pd.DataFrame) -> pd.DataFrame:
+    """範例 Prefect Flow"""
+    steps = [DataCleanser(), FeatureEngineer(features_to_create=["moving_average"])]
+    return run_pipeline(df, steps)

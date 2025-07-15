@@ -26,3 +26,23 @@ python example.py
 pytest
 ```
 
+
+## 啟動排程器與註冊任務
+
+1. 安裝所有依賴：
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. 啟動 Prefect Orion 伺服器：
+   ```bash
+   prefect orion start
+   ```
+3. 建立並套用部署檔案：
+   ```bash
+   prefect deployment build pipelines/data_pipeline.py:data_pipeline_flow -n data-pipeline -q default
+   prefect deployment apply data_pipeline_flow-deployment.yaml
+   ```
+4. 啟動執行代理：
+   ```bash
+   prefect agent start -q default
+   ```
