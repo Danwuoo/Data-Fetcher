@@ -1,0 +1,10 @@
+api_keys:
+  default:
+    calls: 5
+    period: 1
+    burst: 5
+endpoints:
+  example:
+    calls: 10
+    period: 1
+    burst: 10
