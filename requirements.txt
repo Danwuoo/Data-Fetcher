@@ -33,3 +33,4 @@ duckdb
 psycopg[binary]
 boto3
 pyarrow
+kafka-python
