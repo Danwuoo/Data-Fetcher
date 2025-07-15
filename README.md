@@ -103,3 +103,11 @@ sum(rate(data_ingestion_429_total[1m])) > 100
 ```
 
 更多細節請見 [`docs/monitoring.md`](docs/monitoring.md)。
+
+## Pipeline 步驟範例
+
+下列文件展示各處理步驟執行前後的資料變化：
+- [DataCleanser](docs/steps/DataCleanser.md)
+- [FeatureEngineer](docs/steps/FeatureEngineer.md)
+- [MissingValueHandler](docs/steps/MissingValueHandler.md)
+- [TimeAligner](docs/steps/TimeAligner.md)
