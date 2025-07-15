@@ -1,5 +1,9 @@
 # Data-Fetcher
 
+若要檢視 CI 狀態徽章，請將下列網址中的 `<YOUR_GITHUB_ACCOUNT>` 替換成你的 GitHub 帳號：
+
+[![CI](https://github.com/<YOUR_GITHUB_ACCOUNT>/Data-Fetcher/actions/workflows/ci.yml/badge.svg)](https://github.com/<YOUR_GITHUB_ACCOUNT>/Data-Fetcher/actions/workflows/ci.yml)
+
 此專案提供非同步 API 資料擷取與簡易處理管線，方便在 ZXQuant 或其他回測系統中使用。
 
 ## 安裝

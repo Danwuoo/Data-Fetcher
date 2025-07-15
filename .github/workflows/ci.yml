@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    paths-ignore:
+      - '**/*.md'
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: 設定 Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      - name: 安裝依賴
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install flake8 pytest pytest-cov
+      - name: 執行 Flake8
+        run: flake8 .
+      - name: 執行 pytest
+        run: pytest --cov
