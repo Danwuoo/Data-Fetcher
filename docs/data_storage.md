@@ -24,3 +24,13 @@ recent = manager.read('prices')
 manager.migrate('prices', 'hot', 'cold')
 ```
 
+
+## 指令操作範例
+
+透過 `zxq` 指令亦可移動資料表，例如：
+
+```bash
+zxq storage migrate --table prices --to warm
+```
+
+加入 `--dry-run` 參數則僅顯示預計動作而不實際執行。

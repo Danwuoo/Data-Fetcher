@@ -29,6 +29,25 @@ python example.py
 ```bash
 pytest
 ```
+## CLI 使用範例
+
+安裝完成後可透過 `zxq` 指令進行 Walk-Forward 切分：
+
+```bash
+zxq walk-forward 10 3 2 2
+```
+
+會輸出每一折的訓練與測試索引。
+
+
+## 環境變數
+
+`ApiClient` 預設會讀取下列環境變數調整批次大小與併發量：
+
+| 變數名稱 | 預設值 | 說明 |
+|-----------|-------|------------------------------------------------|
+| `BATCH_SIZE` | `1` | `call_batch` 同時送出的請求數 |
+| `CONCURRENCY` | `0` | API 連線的最大併發數，0 表示不限 |
 
 
 ## 啟動排程器與註冊任務
@@ -72,8 +91,7 @@ endpoints:
     burst: 10
 ```
 
-在程式中可使用 `RateLimiter.from_config("default", "example")` 建立實例，隨時重新載入檔案內容。
-
+在程式中可使用 `RateLimiter.from_config("default", "example")` 建立實例，隨時重新載入檔案內容。若 `rate_limits.yml` 更新，可呼叫 `data_ingestion.reload_limits()` 立即套用新限制。
 ## 啟動 Proxy 服務
 
 Proxy 透過 FastAPI 以及 `create_proxy_app()` 建立。使用 `uvicorn --factory` 啟動並指定目標 API：
@@ -81,6 +99,18 @@ Proxy 透過 FastAPI 以及 `create_proxy_app()` 建立。使用 `uvicorn --fact
 ```bash
 uvicorn 'data_ingestion.proxy:create_proxy_app("https://api.example.com")' --factory --port 8000
 ```
+
+### Docker Compose 快速啟動
+
+倉庫內已提供 `docker-compose.yml` 及 `proxy/conf` 下的 NGINX 設定檔，
+可直接啟動 NGINX 與 FastAPI Proxy 組成的服務：
+
+```bash
+docker compose up --build
+```
+
+Nginx 會在本機的 80 連接埠對外服務，FastAPI 於容器內的 8000
+連接埠執行，可透過 `PROXY_TARGET` 環境變數調整轉發目標。
 
 建議 `fastapi>=0.110`、`uvicorn>=0.23`。
 
@@ -94,6 +124,15 @@ prefect deployment run data-pipeline
 
 處理後的資料會存入 `HybridStorageManager` 管理的 Hot/Warm/Cold 層級，詳細說明請參考 [`docs/data_storage.md`](docs/data_storage.md)。
 
+### Airflow DAG 觸發範例
+
+啟動 Airflow 後，可透過下列指令手動觸發 `ingest_process_dag`：
+
+```bash
+airflow dags trigger ingest_process_dag
+```
+
+
 ## 監控
 
 使用 `metrics.start_exporter()` 啟動 Prometheus 指標服務，Grafana 可連至對應的 Prometheus URL 建立儀表板。警報範例：
@@ -103,6 +142,7 @@ sum(rate(data_ingestion_429_total[1m])) > 100
 ```
 
 更多細節請見 [`docs/monitoring.md`](docs/monitoring.md)。
+
 
 ## 版本標籤與 CHANGELOG
 
@@ -117,3 +157,19 @@ sum(rate(data_ingestion_429_total[1m])) > 100
 ## CI 工作流程
 
 本庫的 GitHub Actions (`.github/workflows/ci.yml`) 會在推送或 PR 時自動執行 Flake8 與 pytest，僅於程式碼變更時觸發，文件修改則不會執行。
+=======
+## Catalog 漂移檢查
+
+`pipelines/catalog_drift.py` 內建 Prefect 排程，每日 0 點自動呼叫
+`catalog_drift_flow()` 以比對 Catalog 與實際資料的 schema。若發現
+不一致，可透過設定 `SLACK_WEBHOOK_URL` 環境變數接收警報。
+
+## Pipeline 步驟範例
+
+下列文件展示各處理步驟執行前後的資料變化：
+- [DataCleanser](docs/steps/DataCleanser.md)
+- [FeatureEngineer](docs/steps/FeatureEngineer.md)
+- [MissingValueHandler](docs/steps/MissingValueHandler.md)
+- [TimeAligner](docs/steps/TimeAligner.md)
+
+

@@ -23,6 +23,26 @@ RATE_LIMIT_429_COUNTER = Counter(
     ["endpoint"],
 )
 
+# 計數快取命中與未命中次數
+CACHE_HIT_COUNTER = Counter(
+    "data_ingestion_cache_hit_total",
+    "\u5feb\u53d6\u547d\u4e2d\u6b21\u6578",
+    ["endpoint"],
+)
+
+CACHE_MISS_COUNTER = Counter(
+    "data_ingestion_cache_miss_total",
+    "\u5feb\u53d6\u672a\u547d\u4e2d\u6b21\u6578",
+    ["endpoint"],
+)
+
+# 命中率
+CACHE_HIT_RATIO = Gauge(
+    "data_ingestion_cache_hit_ratio",
+    "\u5feb\u53d6\u547d\u4e2d\u7387",
+    ["endpoint"],
+)
+
 
 def start_metrics_server(port: int) -> None:
     """\u555f\u52d5 Prometheus \u670d\u52d9\uff0c\u4f9b\u7d66 /metrics."""

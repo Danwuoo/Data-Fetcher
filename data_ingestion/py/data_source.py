@@ -1,6 +1,11 @@
 from data_ingestion.py.api_client import ApiClient
 from data_ingestion.py.rate_limiter import RateLimiter
 from data_ingestion.py.caching import LRUCache
+from data_ingestion.metrics import (
+    CACHE_HIT_COUNTER,
+    CACHE_MISS_COUNTER,
+    CACHE_HIT_RATIO,
+)
 
 
 class APIDataSource:
@@ -45,10 +50,23 @@ class APIDataSource:
         """
         param_tuple = tuple(sorted(params.items())) if params else None
         cache_key = f"{self.endpoint}:{param_tuple}"
+
+        hit_metric = CACHE_HIT_COUNTER.labels(endpoint=self.endpoint)
+        miss_metric = CACHE_MISS_COUNTER.labels(endpoint=self.endpoint)
+        ratio_metric = CACHE_HIT_RATIO.labels(endpoint=self.endpoint)
+
         cached_data = await self.cache.get(cache_key)
         if cached_data is not None:
+            hit_metric.inc()
+            total_hits = hit_metric._value.get()
+            total_misses = miss_metric._value.get()
+            ratio_metric.set(total_hits / (total_hits + total_misses))
             return cached_data
 
+        miss_metric.inc()
         data = await self.api_client.call_api(self.endpoint, params)
         await self.cache.set(cache_key, data)
+        total_hits = hit_metric._value.get()
+        total_misses = miss_metric._value.get()
+        ratio_metric.set(total_hits / (total_hits + total_misses))
         return data
