@@ -48,6 +48,12 @@ zxq walk-forward 10 3 2 2
 |-----------|-------|------------------------------------------------|
 | `BATCH_SIZE` | `1` | `call_batch` 同時送出的請求數 |
 | `CONCURRENCY` | `0` | API 連線的最大併發數，0 表示不限 |
+| `THROTTLE_ALPHA` | `0.2` | EWMA 平滑係數 |
+| `LATENCY_TARGET` | `0.5` | 平均延遲目標 (秒) |
+| `MIN_BATCH_SIZE` | `1` | 調節器允許的最小批次大小 |
+| `MAX_BATCH_SIZE` | `BATCH_SIZE` | 調節器允許的最大批次大小 |
+| `MIN_CONCURRENCY` | `1` | 調節器允許的最小併發數 |
+| `MAX_CONCURRENCY` | `CONCURRENCY` | 調節器允許的最大併發數 |
 
 
 ## 啟動排程器與註冊任務
