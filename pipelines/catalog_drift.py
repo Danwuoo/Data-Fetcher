@@ -2,8 +2,10 @@ from prefect import flow, get_run_logger
 from prefect.deployments import DeploymentSpec
 from prefect.orion.schemas.schedules import CronSchedule
 
+import os
 from data_storage.storage_backend import HybridStorageManager
 from data_storage.catalog import check_drift
+from utils.notify import SlackNotifier
 
 
 @flow
@@ -11,7 +13,8 @@ def catalog_drift_flow() -> None:
     """每日檢查 Catalog schema 是否漂移。"""
     logger = get_run_logger()
     manager = HybridStorageManager()
-    mismatches = check_drift(manager)
+    notifier = SlackNotifier(os.getenv("SLACK_WEBHOOK"))
+    mismatches = check_drift(manager, notifier=notifier)
     if mismatches:
         logger.warning(f"Schema drift detected: {', '.join(mismatches)}")
     else:

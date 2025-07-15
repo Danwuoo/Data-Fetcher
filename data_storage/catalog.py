@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+from utils.notify import Notifier, SlackNotifier
+
 if TYPE_CHECKING:  # pragma: no cover - type checking imports
     from .storage_backend import HybridStorageManager
 
@@ -108,19 +110,12 @@ class Catalog:
 
 
 def send_slack_alert(message: str, webhook_url: str | None = None) -> None:
-    """傳送 Slack 警報，webhook 未設定則忽略。"""
-    if not webhook_url:
-        return
-    try:
-        import httpx
-
-        httpx.post(webhook_url, json={"text": message})
-    except Exception:
-        pass
+    """已廢棄：改用 Notifier 介面。"""
+    SlackNotifier(webhook_url).send(message)
 
 
 def check_drift(
-    manager: "HybridStorageManager", webhook_url: str | None = None
+    manager: "HybridStorageManager", notifier: Notifier | None = None
 ) -> list[str]:
     """重新計算 schema hash，若不一致則警告並更新紀錄。"""
     from .storage_backend import HybridStorageManager
@@ -157,6 +152,7 @@ def check_drift(
         )
         if new_hash != stored_hash:
             mismatches.append(table)
-            send_slack_alert(f"Schema drift detected for {table}", webhook_url)
+            if notifier:
+                notifier.send(f"Schema drift detected for {table}")
     catalog.conn.commit()
     return mismatches
