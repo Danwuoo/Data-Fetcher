@@ -1,6 +1,6 @@
 from data_ingestion.py.api_client import ApiClient
 from data_ingestion.py.rate_limiter import RateLimiter
-from data_ingestion.py.caching import LRUCache
+from data_ingestion.py.caching import ICache
 from data_ingestion.metrics import (
     CACHE_HIT_COUNTER,
     CACHE_MISS_COUNTER,
@@ -17,7 +17,7 @@ class APIDataSource:
     def __init__(
         self,
         api_client: ApiClient,
-        cache: LRUCache,
+        cache: ICache,
         endpoint: str,
         rate_limiter: RateLimiter | None = None,
     ):

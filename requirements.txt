@@ -25,6 +25,7 @@ uvicorn
 
 redis
 fakeredis
+aiomcache
 
 pandas-stubs
 types-PyYAML
