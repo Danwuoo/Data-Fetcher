@@ -1,5 +1,6 @@
 import httpx
 import asyncio
+import os
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 from data_ingestion.py.rate_limiter import RateLimiter
 from data_ingestion.metrics import REQUEST_COUNTER
@@ -16,20 +17,23 @@ class ApiClient:
         limiters: dict[str, RateLimiter] | None = None,
         default_limiter: RateLimiter | None = None,
         proxy_base_url: str | None = None,
-        max_concurrency: int | None = None,
+        max_concurrency: int | None = int(os.getenv("CONCURRENCY", 0)),
+        batch_size: int = int(os.getenv("BATCH_SIZE", 1)),
     ):
         """初始化 ApiClient。
 
         Args:
             base_url: API 的基底網址
             proxy_base_url: 若提供則透過此 proxy 轉發請求
-            max_concurrency: 同時允許的最大 API 連線數，``None`` 表示不限制
+            max_concurrency: 同時允許的最大 API 連線數，``0`` 或 ``None`` 表示不限制
+            batch_size: `call_batch` 同時送出的請求數量
         """
         self.base_url = base_url
         self.proxy_base_url = proxy_base_url
         self.session: httpx.AsyncClient | None = None
         self.limiters = limiters or {}
         self.default_limiter = default_limiter
+        self.batch_size = max(batch_size, 1)
         self.semaphore = (
             asyncio.Semaphore(max_concurrency) if max_concurrency else None
         )
@@ -99,8 +103,13 @@ class ApiClient:
         return response.json()
 
     async def call_batch(self, endpoints: list[tuple[str, dict]]):
-        """批次呼叫多個 API，遵守最大併發限制。"""
-        tasks = [
-            asyncio.create_task(self.call_api(ep, params)) for ep, params in endpoints
-        ]
-        return await asyncio.gather(*tasks)
+        """批次呼叫多個 API，會依據 ``batch_size`` 分段執行。"""
+        results = []
+        for i in range(0, len(endpoints), self.batch_size):
+            batch = endpoints[i : i + self.batch_size]
+            tasks = [
+                asyncio.create_task(self.call_api(ep, params))
+                for ep, params in batch
+            ]
+            results.extend(await asyncio.gather(*tasks))
+        return results
