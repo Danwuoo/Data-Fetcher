@@ -30,7 +30,6 @@ class MissingValueHandler(PipelineStep):
         Returns:
             The processed DataFrame.
         """
-        df = self._validate_input(df)
         if self.strategy == 'fill':
             processed_df = df.fillna(self.fill_value)
         elif self.strategy == 'dropna':
@@ -39,4 +38,4 @@ class MissingValueHandler(PipelineStep):
             processed_df = df.interpolate()
         else:
             raise ValueError(f"Unknown strategy: {self.strategy}")
-        return self._validate_output(processed_df)
+        return processed_df

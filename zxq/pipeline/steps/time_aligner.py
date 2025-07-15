@@ -39,8 +39,7 @@ class TimeAligner(PipelineStep):
         Returns:
             The processed DataFrame.
         """
-        df = self._validate_input(df)
         df[self.time_column] = pd.to_datetime(df[self.time_column])
         df = df.set_index(self.time_column)
         processed_df = df.resample(self.resample_rule).mean()
-        return self._validate_output(processed_df.reset_index())
+        return processed_df.reset_index()

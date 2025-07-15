@@ -28,7 +28,6 @@ class FeatureEngineer(PipelineStep):
         Returns:
             The processed DataFrame.
         """
-        df = self._validate_input(df)
         processed_df = df.copy()
         for feature in self.features_to_create:
             if feature == 'moving_average':
@@ -37,4 +36,4 @@ class FeatureEngineer(PipelineStep):
                 )
             else:
                 raise ValueError(f"Unknown feature: {feature}")
-        return self._validate_output(processed_df)
+        return processed_df

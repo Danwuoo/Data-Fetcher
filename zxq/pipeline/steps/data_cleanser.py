@@ -33,7 +33,6 @@ class DataCleanser(PipelineStep):
         Returns:
             The cleaned DataFrame.
         """
-        df = self._validate_input(df)
         processed_df = df.copy()
 
         if self.remove_outliers:
@@ -48,4 +47,4 @@ class DataCleanser(PipelineStep):
                     & (processed_df[column] <= upper_bound)
                 ]
 
-        return self._validate_output(processed_df)
+        return processed_df
