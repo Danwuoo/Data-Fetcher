@@ -1,0 +1,17 @@
+groups:
+  - name: data-fetcher
+    rules:
+      - alert: High429Rate
+        expr: sum(rate(data_ingestion_429_total[1m])) > 100
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "429 錯誤率過高"
+      - alert: PipelineNotProcessing
+        expr: rate(data_processing_steps_total[5m]) == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "處理管線 5 分鐘內未執行"

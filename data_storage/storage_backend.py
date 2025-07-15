@@ -2,11 +2,19 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 import hashlib
+import os
 from collections import deque
 import pandas as pd
+import yaml
 
 from .catalog import Catalog, CatalogEntry
-from metrics import STORAGE_WRITE_COUNTER, STORAGE_READ_COUNTER
+from metrics import (
+    STORAGE_WRITE_COUNTER,
+    STORAGE_READ_COUNTER,
+    MIGRATION_LATENCY_MS,
+    update_tier_hit_rate,
+)
+from time import perf_counter
 
 
 class StorageBackend(ABC):
@@ -103,15 +111,32 @@ class HybridStorageManager(StorageBackend):
         warm_store: StorageBackend | None = None,
         cold_store: StorageBackend | None = None,
         catalog: Catalog | None = None,
-        hot_capacity: int = 3,
-        warm_capacity: int = 5,
+        hot_capacity: int | None = None,
+        warm_capacity: int | None = None,
+        config_path: str = "storage.yaml",
     ) -> None:
+        config: dict[str, object] = {}
+        if os.path.exists(config_path):
+            with open(config_path, "r", encoding="utf-8") as f:
+                config = yaml.safe_load(f) or {}
+
         self.hot_store = hot_store or DuckHot()
         self.warm_store = warm_store or TimescaleWarm()
         self.cold_store = cold_store or S3Cold()
         self.catalog = catalog or Catalog()
-        self.hot_capacity = hot_capacity
-        self.warm_capacity = warm_capacity
+        self.tier_order: list[str] = config.get(
+            "tier_order", ["hot", "warm", "cold"]
+        )
+        self.hot_capacity = (
+            hot_capacity
+            if hot_capacity is not None
+            else int(config.get("hot_capacity", 3))
+        )
+        self.warm_capacity = (
+            warm_capacity
+            if warm_capacity is not None
+            else int(config.get("warm_capacity", 5))
+        )
         self._hot_lru: deque[str] = deque()
         self._warm_lru: deque[str] = deque()
 
@@ -145,7 +170,12 @@ class HybridStorageManager(StorageBackend):
         schema_hash = hashlib.sha256(str(df.dtypes.to_dict()).encode()).hexdigest()
         self.catalog.upsert(
             CatalogEntry(
-                table_name=table, tier=tier, location=tier, schema_hash=schema_hash
+                table_name=table,
+                tier=tier,
+                location=tier,
+                schema_hash=schema_hash,
+                row_count=len(df),
+                lineage="write",
             )
         )
 
@@ -159,12 +189,13 @@ class HybridStorageManager(StorageBackend):
     def read(
         self, table: str, tiers: list[str] | None = None
     ) -> pd.DataFrame:
-        tiers = tiers or ["hot", "warm", "cold"]
+        tiers = tiers or self.tier_order
         for tier in tiers:
             backend = self._backend_for(tier)
             try:
                 result = backend.read(table)
                 STORAGE_READ_COUNTER.labels(tier=tier).inc()
+                update_tier_hit_rate()
                 return result
             except KeyError:
                 continue
@@ -175,10 +206,12 @@ class HybridStorageManager(StorageBackend):
             backend.delete(table)
 
     def migrate(self, table: str, src_tier: str, dst_tier: str) -> None:
+        start_time = perf_counter()
         src = self._backend_for(src_tier)
         dst = self._backend_for(dst_tier)
         df = src.read(table)
         STORAGE_READ_COUNTER.labels(tier=src_tier).inc()
+        update_tier_hit_rate()
         dst.write(df, table)
         STORAGE_WRITE_COUNTER.labels(tier=dst_tier).inc()
         src.delete(table)
@@ -196,3 +229,7 @@ class HybridStorageManager(StorageBackend):
             self._record_lru(self._hot_lru, table)
 
         self._check_capacity()
+        duration_ms = (perf_counter() - start_time) * 1000
+        MIGRATION_LATENCY_MS.labels(src_tier=src_tier, dst_tier=dst_tier).observe(
+            duration_ms
+        )

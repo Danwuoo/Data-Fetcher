@@ -1,7 +1,7 @@
 import unittest
 import pandas as pd
 import numpy as np
-from data_processing.missing_value_handler import MissingValueHandler
+from zxq.pipeline.steps.missing_value_handler import MissingValueHandler
 
 
 class TestMissingValueHandler(unittest.TestCase):
