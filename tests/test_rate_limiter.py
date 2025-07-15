@@ -15,11 +15,20 @@ async def test_rate_limiter():
     for _ in range(5):
         await limiter.acquire()
 
-    # 第六次呼叫應該等待約 0.2 秒
     await limiter.acquire()
     end_time = time.monotonic()
 
     assert end_time - start_time >= 0.19
+
+
+@pytest.mark.asyncio
+async def test_adaptive_throttle():
+    """連續 429 時應自動降低速率。"""
+    limiter = RateLimiter(calls=5, period=1, fail_threshold=2)
+    original = limiter.calls
+    limiter.record_failure(status_code=429)
+    limiter.record_failure(status_code=429)
+    assert limiter.calls < original
 
 
 @pytest.mark.asyncio
@@ -42,6 +51,7 @@ async def test_refill():
 async def test_from_config(tmp_path):
     """確認能夠從 YAML 載入設定。"""
     config = {
+        "global": {"calls": 10, "period": 1, "burst": 10},
         "api_keys": {"key": {"calls": 2, "period": 1, "burst": 2}},
         "endpoints": {"/ep": {"calls": 3, "period": 1, "burst": 3}},
     }

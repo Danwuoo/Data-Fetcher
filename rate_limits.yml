@@ -1,3 +1,7 @@
+global:
+  calls: 100
+  period: 60
+  burst: 100
 api_keys:
   default:
     calls: 5

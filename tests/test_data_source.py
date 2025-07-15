@@ -12,6 +12,7 @@ async def test_read_from_cache():
     Tests that data is read from the cache if it exists.
     """
     api_client = AsyncMock(spec=ApiClient)
+    api_client.limiters = {}
     rate_limiter = MagicMock(spec=RateLimiter)
     cache = MagicMock(spec=LRUCache)
     cache.get = AsyncMock()
@@ -20,7 +21,7 @@ async def test_read_from_cache():
         api_client=api_client,
         rate_limiter=rate_limiter,
         cache=cache,
-        endpoint=endpoint
+        endpoint=endpoint,
     )
     params = {"param": "value"}
     cache_key = f"{endpoint}:{tuple(sorted(params.items()))}"
@@ -41,6 +42,7 @@ async def test_read_from_api():
     Tests that data is read from the API if it's not in the cache.
     """
     api_client = AsyncMock(spec=ApiClient)
+    api_client.limiters = {}
     rate_limiter = MagicMock(spec=RateLimiter)
     cache = MagicMock(spec=LRUCache)
     cache.get = AsyncMock()
@@ -62,6 +64,6 @@ async def test_read_from_api():
 
     assert data == expected_data
     cache.get.assert_called_once_with(cache_key)
-    rate_limiter.acquire.assert_called_once()
+    rate_limiter.acquire.assert_not_called()
     api_client.call_api.assert_called_once_with(endpoint, params)
     cache.set.assert_called_once_with(cache_key, expected_data)
