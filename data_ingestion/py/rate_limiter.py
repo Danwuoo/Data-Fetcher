@@ -141,6 +141,11 @@ class RateLimiter:
             self.fail_count = 0
             self._update_attrs()
 
+    @property
+    def remaining_tokens(self) -> float:
+        """取得主要 Bucket 的剩餘 token 數。"""
+        return self.buckets[0].tokens
+
     @classmethod
     def from_config(
         cls,
