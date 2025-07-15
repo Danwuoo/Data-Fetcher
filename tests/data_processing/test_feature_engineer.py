@@ -1,6 +1,6 @@
 import unittest
 import pandas as pd
-from data_processing.feature_engineer import FeatureEngineer
+from zxq.pipeline.steps.feature_engineer import FeatureEngineer
 
 
 class TestFeatureEngineer(unittest.TestCase):

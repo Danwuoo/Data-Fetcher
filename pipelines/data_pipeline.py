@@ -7,8 +7,7 @@ import pandas as pd
 from prefect import flow, task, get_run_logger
 
 from data_processing.pipeline import Pipeline
-from data_processing.data_cleanser import DataCleanser
-from data_processing.feature_engineer import FeatureEngineer
+from zxq.pipeline.loader import load_steps_from_yaml
 
 
 @task
@@ -26,5 +25,6 @@ def run_pipeline(df: pd.DataFrame, steps: Iterable) -> pd.DataFrame:
 @flow
 def data_pipeline_flow(df: pd.DataFrame) -> pd.DataFrame:
     """範例 Prefect Flow"""
-    steps = [DataCleanser(), FeatureEngineer(features_to_create=["moving_average"])]
+    classes = load_steps_from_yaml("steps.yaml")
+    steps = [cls() for cls in classes]
     return run_pipeline(df, steps)
