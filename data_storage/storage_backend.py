@@ -6,6 +6,7 @@ from collections import deque
 import pandas as pd
 
 from .catalog import Catalog, CatalogEntry
+from metrics import STORAGE_WRITE_COUNTER, STORAGE_READ_COUNTER
 
 
 class StorageBackend(ABC):
@@ -139,6 +140,7 @@ class HybridStorageManager(StorageBackend):
     def write(self, df: pd.DataFrame, table: str, tier: str = "hot") -> None:
         backend = self._backend_for(tier)
         backend.write(df, table)
+        STORAGE_WRITE_COUNTER.labels(tier=tier).inc()
 
         schema_hash = hashlib.sha256(str(df.dtypes.to_dict()).encode()).hexdigest()
         self.catalog.upsert(
@@ -161,7 +163,9 @@ class HybridStorageManager(StorageBackend):
         for tier in tiers:
             backend = self._backend_for(tier)
             try:
-                return backend.read(table)
+                result = backend.read(table)
+                STORAGE_READ_COUNTER.labels(tier=tier).inc()
+                return result
             except KeyError:
                 continue
         raise KeyError(table)
@@ -174,7 +178,9 @@ class HybridStorageManager(StorageBackend):
         src = self._backend_for(src_tier)
         dst = self._backend_for(dst_tier)
         df = src.read(table)
+        STORAGE_READ_COUNTER.labels(tier=src_tier).inc()
         dst.write(df, table)
+        STORAGE_WRITE_COUNTER.labels(tier=dst_tier).inc()
         src.delete(table)
 
         self.catalog.update_tier(table, dst_tier, dst_tier)

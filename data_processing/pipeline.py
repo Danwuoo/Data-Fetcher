@@ -7,6 +7,7 @@ import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 from data_processing.pipeline_step import PipelineStep
+from metrics import PROCESSING_STEP_COUNTER
 
 
 class Pipeline:
@@ -59,6 +60,8 @@ class Pipeline:
                     df = pd.concat(parts, ignore_index=True)
                 else:
                     df = step.process(df)
+
+                PROCESSING_STEP_COUNTER.labels(step=step.__class__.__name__).inc()
 
                 duration = time.time() - start
                 writer.writerow([

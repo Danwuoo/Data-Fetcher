@@ -93,3 +93,13 @@ prefect deployment run data-pipeline
 ```
 
 處理後的資料會存入 `HybridStorageManager` 管理的 Hot/Warm/Cold 層級，詳細說明請參考 [`docs/data_storage.md`](docs/data_storage.md)。
+
+## 監控
+
+使用 `metrics.start_exporter()` 啟動 Prometheus 指標服務，Grafana 可連至對應的 Prometheus URL 建立儀表板。警報範例：
+
+```
+sum(rate(data_ingestion_429_total[1m])) > 100
+```
+
+更多細節請見 [`docs/monitoring.md`](docs/monitoring.md)。
