@@ -2,6 +2,7 @@ import httpx
 import asyncio
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 from data_ingestion.py.rate_limiter import RateLimiter
+from data_ingestion.metrics import REQUEST_COUNTER
 
 
 class ApiClient:
@@ -60,6 +61,7 @@ class ApiClient:
         """
         if self.session is None:
             self.session = httpx.AsyncClient()
+        REQUEST_COUNTER.labels(endpoint=endpoint).inc()
         limiter = self.limiters.get(endpoint, self.default_limiter)
         if limiter:
             await limiter.acquire()
