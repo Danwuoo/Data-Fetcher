@@ -1,18 +1,22 @@
 import sqlite3
 import hashlib
 from dataclasses import dataclass
+from datetime import datetime
 
 
 @dataclass
 class CatalogEntry:
-    """Catalog 資料結構。"""
+    """Catalog 資料結構，包含版本與分割區資訊。"""
 
     table_name: str
+    version: int
     tier: str
     location: str
     schema_hash: str
     row_count: int = 0
+    partition_keys: str = ""
     lineage: str = ""
+    created_at: str | None = None
 
 
 class Catalog:
@@ -23,40 +27,49 @@ class Catalog:
         self.conn.execute(
             """
             CREATE TABLE IF NOT EXISTS catalog (
-                table_name TEXT PRIMARY KEY,
+                table_name TEXT,
+                version INTEGER,
                 tier TEXT,
                 location TEXT,
                 schema_hash TEXT,
                 row_count INTEGER DEFAULT 0,
-                lineage TEXT DEFAULT ""
+                partition_keys TEXT DEFAULT "",
+                lineage TEXT DEFAULT "",
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (table_name, version)
             )
             """
         )
         self.conn.commit()
 
     def upsert(self, entry: CatalogEntry) -> None:
-        """新增或更新表格資訊。"""
+        """新增一筆表格版本紀錄。"""
         with self.conn:
+            cur = self.conn.execute(
+                "SELECT COALESCE(MAX(version), 0) + 1 FROM catalog WHERE table_name=?",
+                (entry.table_name,),
+            )
+            version = cur.fetchone()[0]
+            entry.version = version
+            entry.created_at = entry.created_at or datetime.utcnow().isoformat()
             self.conn.execute(
                 """
                 INSERT INTO catalog (
-                    table_name, tier, location, schema_hash, row_count, lineage
+                    table_name, version, tier, location, schema_hash,
+                    row_count, partition_keys, lineage, created_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT(table_name) DO UPDATE SET
-                    tier=excluded.tier,
-                    location=excluded.location,
-                    schema_hash=excluded.schema_hash,
-                    row_count=excluded.row_count,
-                    lineage=excluded.lineage
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     entry.table_name,
+                    entry.version,
                     entry.tier,
                     entry.location,
                     entry.schema_hash,
                     entry.row_count,
+                    entry.partition_keys,
                     entry.lineage,
+                    entry.created_at,
                 ),
             )
 
@@ -64,15 +77,21 @@ class Catalog:
         """更新表格所在層級。"""
         with self.conn:
             self.conn.execute(
-                "UPDATE catalog SET tier=?, location=? WHERE table_name=?",
-                (tier, location, table_name),
+                """
+                UPDATE catalog
+                SET tier=?, location=?
+                WHERE table_name=?
+                  AND version=(SELECT MAX(version) FROM catalog WHERE table_name=?)
+                """,
+                (tier, location, table_name, table_name),
             )
 
     def get(self, table_name: str) -> CatalogEntry | None:
         cur = self.conn.execute(
             (
-                "SELECT table_name, tier, location, schema_hash, row_count, lineage "
-                "FROM catalog WHERE table_name=?"
+                "SELECT table_name, version, tier, location, schema_hash, row_count,"
+                " partition_keys, lineage, created_at FROM catalog"
+                " WHERE table_name=? ORDER BY version DESC LIMIT 1"
             ),
             (table_name,),
         )
@@ -102,7 +121,15 @@ def check_drift(manager, webhook_url: str | None = None) -> list[str]:
         raise TypeError("manager must be HybridStorageManager")
 
     catalog = manager.catalog
-    cur = catalog.conn.execute("SELECT table_name, tier, schema_hash FROM catalog")
+    cur = catalog.conn.execute(
+        """
+        SELECT c.table_name, c.tier, c.schema_hash
+        FROM catalog c
+        JOIN (
+            SELECT table_name, MAX(version) AS ver FROM catalog GROUP BY table_name
+        ) m ON c.table_name = m.table_name AND c.version = m.ver
+        """
+    )
     mismatches = []
     for table, tier, stored_hash in cur.fetchall():
         backend = manager._backend_for(tier)
@@ -112,8 +139,13 @@ def check_drift(manager, webhook_url: str | None = None) -> list[str]:
             continue
         new_hash = hashlib.sha256(str(df.dtypes.to_dict()).encode()).hexdigest()
         catalog.conn.execute(
-            "UPDATE catalog SET schema_hash=?, row_count=? WHERE table_name=?",
-            (new_hash, len(df), table),
+            """
+            UPDATE catalog
+            SET schema_hash=?, row_count=?
+            WHERE table_name=?
+              AND version=(SELECT MAX(version) FROM catalog WHERE table_name=?)
+            """,
+            (new_hash, len(df), table, table),
         )
         if new_hash != stored_hash:
             mismatches.append(table)

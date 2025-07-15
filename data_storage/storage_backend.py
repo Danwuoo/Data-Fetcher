@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 import hashlib
 import os
 from collections import deque
+import json
 import pandas as pd
 import yaml
 
@@ -21,8 +22,10 @@ class StorageBackend(ABC):
     """抽象化的儲存後端介面。"""
 
     @abstractmethod
-    def write(self, df: pd.DataFrame, table: str) -> None:
-        """寫入資料到指定表格。"""
+    def write(
+        self, df: pd.DataFrame, table: str, *, metadata: dict | None = None
+    ) -> None:
+        """寫入資料到指定表格，metadata 可附帶額外資訊。"""
         raise NotImplementedError
 
     @abstractmethod
@@ -42,7 +45,9 @@ class DuckHot(StorageBackend):
     def __init__(self) -> None:
         self._tables: dict[str, pd.DataFrame] = {}
 
-    def write(self, df: pd.DataFrame, table: str) -> None:
+    def write(
+        self, df: pd.DataFrame, table: str, *, metadata: dict | None = None
+    ) -> None:
         self._tables[table] = (
             pd.concat([self._tables[table], df], ignore_index=True)
             if table in self._tables
@@ -64,7 +69,9 @@ class TimescaleWarm(StorageBackend):
     def __init__(self) -> None:
         self._tables: dict[str, pd.DataFrame] = {}
 
-    def write(self, df: pd.DataFrame, table: str) -> None:
+    def write(
+        self, df: pd.DataFrame, table: str, *, metadata: dict | None = None
+    ) -> None:
         self._tables[table] = (
             pd.concat([self._tables[table], df], ignore_index=True)
             if table in self._tables
@@ -86,7 +93,9 @@ class S3Cold(StorageBackend):
     def __init__(self) -> None:
         self._tables: dict[str, pd.DataFrame] = {}
 
-    def write(self, df: pd.DataFrame, table: str) -> None:
+    def write(
+        self, df: pd.DataFrame, table: str, *, metadata: dict | None = None
+    ) -> None:
         self._tables[table] = (
             pd.concat([self._tables[table], df], ignore_index=True)
             if table in self._tables
@@ -162,19 +171,40 @@ class HybridStorageManager(StorageBackend):
             oldest = self._warm_lru.popleft()
             self.migrate(oldest, "warm", "cold")
 
-    def write(self, df: pd.DataFrame, table: str, tier: str = "hot") -> None:
+    def write(
+        self,
+        df: pd.DataFrame,
+        table: str,
+        tier: str = "hot",
+        *,
+        lineage_id: str | None = None,
+    ) -> None:
         backend = self._backend_for(tier)
-        backend.write(df, table)
+        if lineage_id:
+            df.attrs["lineage_id"] = lineage_id
+        backend.write(
+            df,
+            table,
+            metadata={"lineage_id": lineage_id} if lineage_id else None,
+        )
         STORAGE_WRITE_COUNTER.labels(tier=tier).inc()
 
         schema_hash = hashlib.sha256(str(df.dtypes.to_dict()).encode()).hexdigest()
+        partition_data = {}
+        for col in ("date", "asset"):
+            if col in df.columns:
+                partition_data[col] = str(df[col].iloc[0])
         self.catalog.upsert(
             CatalogEntry(
                 table_name=table,
+                version=0,
                 tier=tier,
                 location=tier,
                 schema_hash=schema_hash,
                 row_count=len(df),
+                partition_keys=json.dumps(
+                    partition_data, ensure_ascii=False
+                ),
                 lineage="write",
             )
         )
