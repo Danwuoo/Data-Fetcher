@@ -4,6 +4,7 @@ import asyncio
 import httpx
 
 from .rate_limiter import RateLimiter
+from .redis_rate_limiter import RedisRateLimiter
 
 
 class RateLimitMiddleware:
@@ -11,8 +12,8 @@ class RateLimitMiddleware:
 
     def __init__(
         self,
-        limiters: dict[str, RateLimiter] | None = None,
-        default_limiter: RateLimiter | None = None,
+        limiters: dict[str, RateLimiter | RedisRateLimiter] | None = None,
+        default_limiter: RateLimiter | RedisRateLimiter | None = None,
     ) -> None:
         self.limiters = limiters or {}
         self.default_limiter = default_limiter

@@ -10,6 +10,7 @@ import httpx
 from tenacity import AsyncRetrying, wait_random_exponential, stop_after_attempt
 
 from data_ingestion.py.rate_limiter import RateLimiter
+from data_ingestion.py.redis_rate_limiter import RedisRateLimiter
 from data_ingestion.py.caching import LRUCache
 
 
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 def create_proxy_app(
     target_base_url: str,
     *,
-    rate_limiter: RateLimiter | None = None,
+    rate_limiter: RateLimiter | RedisRateLimiter | None = None,
     cache: LRUCache | None = None,
 ) -> FastAPI:
     """建立反向 proxy FastAPI 應用程式。"""

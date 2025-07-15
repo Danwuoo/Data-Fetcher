@@ -4,7 +4,9 @@ import time
 import weakref
 import yaml
 from typing import Any, cast
+from redis.asyncio import Redis
 from data_ingestion.metrics import REMAINING_GAUGE, RATE_LIMIT_429_COUNTER
+from data_ingestion.py.redis_rate_limiter import RedisRateLimiter
 
 # 追蹤所有已建立的 RateLimiter，方便統一重新載入設定
 _ACTIVE_LIMITERS: "weakref.WeakSet[RateLimiter]" = weakref.WeakSet()
@@ -159,7 +161,8 @@ class RateLimiter:
         api_key: str,
         endpoint: str,
         config_path: str = "rate_limits.yml",
-    ) -> "RateLimiter":
+        redis_url: str | None = None,
+    ) -> "RateLimiter | RedisRateLimiter":
         """依照設定檔產生 RateLimiter。"""
         if not os.path.exists(config_path):
             raise FileNotFoundError(config_path)
@@ -203,6 +206,15 @@ class RateLimiter:
                 )
             )
 
+        if redis_url:
+            redis = RedisRateLimiter(
+                redis=Redis.from_url(redis_url),
+                key=endpoint or api_key,
+                calls=calls,
+                period=period,
+                burst=burst,
+            )
+            return redis
         return cls(
             calls=calls,
             period=period,
@@ -221,4 +233,4 @@ def reload_limits() -> None:
         limiter._reload_if_needed()
 
 
-__all__ = ["RateLimiter", "reload_limits"]
+__all__ = ["RateLimiter", "RedisRateLimiter", "reload_limits"]
