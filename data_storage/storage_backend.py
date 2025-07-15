@@ -8,7 +8,13 @@ import pandas as pd
 import yaml
 
 from .catalog import Catalog, CatalogEntry
-from metrics import STORAGE_WRITE_COUNTER, STORAGE_READ_COUNTER
+from metrics import (
+    STORAGE_WRITE_COUNTER,
+    STORAGE_READ_COUNTER,
+    MIGRATION_LATENCY_MS,
+    update_tier_hit_rate,
+)
+from time import perf_counter
 
 
 class StorageBackend(ABC):
@@ -189,6 +195,7 @@ class HybridStorageManager(StorageBackend):
             try:
                 result = backend.read(table)
                 STORAGE_READ_COUNTER.labels(tier=tier).inc()
+                update_tier_hit_rate()
                 return result
             except KeyError:
                 continue
@@ -199,10 +206,12 @@ class HybridStorageManager(StorageBackend):
             backend.delete(table)
 
     def migrate(self, table: str, src_tier: str, dst_tier: str) -> None:
+        start_time = perf_counter()
         src = self._backend_for(src_tier)
         dst = self._backend_for(dst_tier)
         df = src.read(table)
         STORAGE_READ_COUNTER.labels(tier=src_tier).inc()
+        update_tier_hit_rate()
         dst.write(df, table)
         STORAGE_WRITE_COUNTER.labels(tier=dst_tier).inc()
         src.delete(table)
@@ -220,3 +229,7 @@ class HybridStorageManager(StorageBackend):
             self._record_lru(self._hot_lru, table)
 
         self._check_capacity()
+        duration_ms = (perf_counter() - start_time) * 1000
+        MIGRATION_LATENCY_MS.labels(src_tier=src_tier, dst_tier=dst_tier).observe(
+            duration_ms
+        )
