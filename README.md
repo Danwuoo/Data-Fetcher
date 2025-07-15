@@ -103,3 +103,8 @@ sum(rate(data_ingestion_429_total[1m])) > 100
 ```
 
 更多細節請見 [`docs/monitoring.md`](docs/monitoring.md)。
+
+## 壓力測試
+
+可使用 Locust 模擬大量請求，腳本位於 [`docs/stress_test.md`](docs/stress_test.md)。
+
