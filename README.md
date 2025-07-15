@@ -29,6 +29,16 @@ python example.py
 ```bash
 pytest
 ```
+## CLI 使用範例
+
+安裝完成後可透過 `zxq` 指令進行 Walk-Forward 切分：
+
+```bash
+zxq walk-forward 10 3 2 2
+```
+
+會輸出每一折的訓練與測試索引。
+
 
 ## 環境變數
 
