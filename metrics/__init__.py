@@ -14,6 +14,13 @@ PROCESSING_STEP_COUNTER = Counter(
     ["step"],
 )
 
+# \u7bc4\u5f0f\u9a57\u8b49\u5931\u6557\u7d50\u675f\u6578
+SCHEMA_VALIDATION_FAIL_COUNTER = Counter(
+    "schema_validation_fail_total",
+    "\u7bc4\u5f0f\u9a57\u8b49\u5931\u6557\u6b21\u6578",
+    ["step"],
+)
+
 # \u8cc7\u6599\u5b58\u50b3\u7684\u5b58\u53d6\u6b21\u6578
 STORAGE_WRITE_COUNTER = Counter(
     "data_storage_write_total",
@@ -66,6 +73,7 @@ __all__ = [
     "REMAINING_GAUGE",
     "CACHE_HIT_RATIO",
     "PROCESSING_STEP_COUNTER",
+    "SCHEMA_VALIDATION_FAIL_COUNTER",
     "STORAGE_WRITE_COUNTER",
     "STORAGE_READ_COUNTER",
     "MIGRATION_LATENCY_MS",

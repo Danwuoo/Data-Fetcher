@@ -1,4 +1,6 @@
 import typer
+import argparse
+from data_processing.cross_validation import walk_forward_split
 from data_storage import Catalog, CatalogEntry
 
 app = typer.Typer(help="ZXQuant CLI 工具")
@@ -25,9 +27,6 @@ def trace(table: str, db: str = ":memory:") -> None:
 
 if __name__ == "__main__":
     app()
-
-import argparse
-from data_processing.cross_validation import walk_forward_split
 
 
 def _cmd_walk_forward(args: argparse.Namespace) -> None:

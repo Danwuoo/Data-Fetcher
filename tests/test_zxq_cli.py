@@ -7,7 +7,14 @@ def test_audit_trace(tmp_path):
     db_path = tmp_path / "cat.db"
     catalog = Catalog(db_path=str(db_path))
     catalog.upsert(
-        CatalogEntry(table_name="tbl", tier="hot", location="hot", schema_hash="h")
+        CatalogEntry(
+            table_name="tbl",
+            version=1,
+            tier="hot",
+            location="hot",
+            schema_hash="h",
+            partition_keys="",
+        )
     )
 
     runner = CliRunner()
