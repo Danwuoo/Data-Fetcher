@@ -11,3 +11,5 @@ pytest-httpx
 flake8
 pyyaml
 fastapi
+
+prometheus-client

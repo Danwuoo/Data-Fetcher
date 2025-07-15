@@ -2,6 +2,7 @@ import asyncio
 import os
 import time
 import yaml
+from data_ingestion.metrics import REMAINING_GAUGE, RATE_LIMIT_429_COUNTER
 
 
 class _TokenBucket:
@@ -71,6 +72,9 @@ class RateLimiter:
                 if all(b.tokens >= 1 for b in self.buckets):
                     for b in self.buckets:
                         b.tokens -= 1
+                    REMAINING_GAUGE.labels(endpoint=self.endpoint or "unknown").set(
+                        self.buckets[0].tokens
+                    )
                     return
                 wait_time = max(
                     (1 - b.tokens) * b.period / b.calls for b in self.buckets
@@ -122,6 +126,10 @@ class RateLimiter:
 
         if status_code == 429 or timeout:
             self.fail_count += 1
+            if status_code == 429:
+                RATE_LIMIT_429_COUNTER.labels(
+                    endpoint=self.endpoint or "unknown"
+                ).inc()
         else:
             self.fail_count = 0
 
