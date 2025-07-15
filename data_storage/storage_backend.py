@@ -9,6 +9,10 @@ from typing import Any, cast
 
 import pandas as pd
 import yaml
+import duckdb
+import psycopg
+import boto3
+import io
 
 from .catalog import Catalog, CatalogEntry
 from metrics import (
@@ -42,75 +46,163 @@ class StorageBackend(ABC):
 
 
 class DuckHot(StorageBackend):
-    """模擬 Hot tier 儲存，使用記憶體儲存資料。"""
+    """Hot tier 以 DuckDB 儲存，可使用檔案或記憶體資料庫。"""
 
-    def __init__(self) -> None:
-        self._tables: dict[str, pd.DataFrame] = {}
+    def __init__(self, path: str = ":memory:") -> None:
+        self.con = duckdb.connect(path)
+        self._tables: set[str] = set()
 
     def write(
         self, df: pd.DataFrame, table: str, *, metadata: dict[str, object] | None = None
     ) -> None:
-        self._tables[table] = (
-            pd.concat([self._tables[table], df], ignore_index=True)
-            if table in self._tables
-            else df.copy()
+        self.con.register("tmp", df)
+        self.con.execute(
+            f"CREATE TABLE IF NOT EXISTS {table} AS SELECT * FROM tmp WHERE FALSE"
         )
+        self.con.execute(f"INSERT INTO {table} SELECT * FROM tmp")
+        self.con.unregister("tmp")
+        self._tables.add(table)
 
     def read(self, table: str) -> pd.DataFrame:
-        if table not in self._tables:
-            raise KeyError(table)
-        return self._tables[table]
+        try:
+            return self.con.execute(f"SELECT * FROM {table}").fetchdf()
+        except duckdb.CatalogException as e:
+            raise KeyError(table) from e
 
     def delete(self, table: str) -> None:
-        self._tables.pop(table, None)
+        self.con.execute(f"DROP TABLE IF EXISTS {table}")
+        self._tables.discard(table)
 
 
 class TimescaleWarm(StorageBackend):
-    """模擬 Warm tier 儲存。"""
+    """Warm tier 透過 PostgreSQL/TimescaleDB 儲存。若未提供 DSN 則使用 DuckDB 模擬。"""
 
-    def __init__(self) -> None:
-        self._tables: dict[str, pd.DataFrame] = {}
+    def __init__(self, dsn: str | None = None) -> None:
+        if dsn:
+            self.conn = psycopg.connect(dsn)
+            with self.conn.cursor() as cur:
+                cur.execute("CREATE EXTENSION IF NOT EXISTS timescaledb")
+            self.use_pg = True
+        else:
+            self.conn = duckdb.connect()  # fallback for測試
+            self.use_pg = False
+        self._tables: set[str] = set()
+
+    def _create_table(self, df: pd.DataFrame, table: str) -> None:
+        cols = []
+        for name, dtype in df.dtypes.items():
+            if pd.api.types.is_integer_dtype(dtype):
+                col_type = "INTEGER"
+            elif pd.api.types.is_float_dtype(dtype):
+                col_type = "DOUBLE PRECISION"
+            elif pd.api.types.is_bool_dtype(dtype):
+                col_type = "BOOLEAN"
+            else:
+                col_type = "TEXT"
+            cols.append(f'"{name}" {col_type}')
+        cols_sql = ", ".join(cols)
+        if self.use_pg:
+            with self.conn.cursor() as cur:
+                cur.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ({cols_sql})')
+            self.conn.commit()
+        else:
+            self.conn.execute(
+                f"CREATE TABLE IF NOT EXISTS {table} ({cols_sql})"
+            )
 
     def write(
         self, df: pd.DataFrame, table: str, *, metadata: dict[str, object] | None = None
     ) -> None:
-        self._tables[table] = (
-            pd.concat([self._tables[table], df], ignore_index=True)
-            if table in self._tables
-            else df.copy()
-        )
+        if self.use_pg:
+            self._create_table(df, table)
+            with self.conn.cursor() as cur:
+                placeholders = ",".join(["%s"] * len(df.columns))
+                insert_sql = f'INSERT INTO "{table}" VALUES ({placeholders})'
+                for row in df.itertuples(index=False, name=None):
+                    cur.execute(insert_sql, row)
+            self.conn.commit()
+        else:
+            self.conn.register("tmp", df)
+            self.conn.execute(
+                f"CREATE TABLE IF NOT EXISTS {table} AS SELECT * FROM tmp WHERE FALSE"
+            )
+            self.conn.execute(f"INSERT INTO {table} SELECT * FROM tmp")
+            self.conn.unregister("tmp")
+        self._tables.add(table)
 
     def read(self, table: str) -> pd.DataFrame:
-        if table not in self._tables:
-            raise KeyError(table)
-        return self._tables[table]
+        if self.use_pg:
+            try:
+                return pd.read_sql(f'SELECT * FROM "{table}"', self.conn)
+            except Exception as e:  # psycopg throws errors for missing table
+                raise KeyError(table) from e
+        try:
+            return self.conn.execute(f"SELECT * FROM {table}").fetchdf()
+        except duckdb.CatalogException as e:
+            raise KeyError(table) from e
 
     def delete(self, table: str) -> None:
-        self._tables.pop(table, None)
+        if self.use_pg:
+            with self.conn.cursor() as cur:
+                cur.execute(f'DROP TABLE IF EXISTS "{table}"')
+            self.conn.commit()
+        else:
+            self.conn.execute(f"DROP TABLE IF EXISTS {table}")
+        self._tables.discard(table)
 
 
 class S3Cold(StorageBackend):
-    """模擬 Cold tier 儲存。"""
+    """Cold tier 以 S3 儲存 Parquet 檔案，預設可在記憶體中模擬。"""
 
-    def __init__(self) -> None:
-        self._tables: dict[str, pd.DataFrame] = {}
+    def __init__(
+        self,
+        bucket: str | None = None,
+        prefix: str = "",
+        s3_client: Any | None = None,
+    ) -> None:
+        bucket = bucket or None
+        self.bucket = bucket
+        self.prefix = prefix
+        self.s3 = s3_client or (boto3.client("s3") if bucket else None)
+        self._tables: dict[str, pd.DataFrame] | None = {} if bucket is None else None
+
+    def _key(self, table: str) -> str:
+        return f"{self.prefix}{table}.parquet"
 
     def write(
         self, df: pd.DataFrame, table: str, *, metadata: dict[str, object] | None = None
     ) -> None:
-        self._tables[table] = (
-            pd.concat([self._tables[table], df], ignore_index=True)
-            if table in self._tables
-            else df.copy()
-        )
+        if self.s3:
+            buf = io.BytesIO()
+            df.to_parquet(buf, index=False)
+            buf.seek(0)
+            self.s3.put_object(
+                Bucket=self.bucket,
+                Key=self._key(table),
+                Body=buf.read(),
+            )
+        else:
+            assert self._tables is not None
+            self._tables[table] = df.copy()
 
     def read(self, table: str) -> pd.DataFrame:
+        if self.s3:
+            try:
+                obj = self.s3.get_object(Bucket=self.bucket, Key=self._key(table))
+                return pd.read_parquet(io.BytesIO(obj["Body"].read()))
+            except Exception as e:
+                raise KeyError(table) from e
+        assert self._tables is not None
         if table not in self._tables:
             raise KeyError(table)
         return self._tables[table]
 
     def delete(self, table: str) -> None:
-        self._tables.pop(table, None)
+        if self.s3:
+            self.s3.delete_object(Bucket=self.bucket, Key=self._key(table))
+        else:
+            assert self._tables is not None
+            self._tables.pop(table, None)
 
 
 class HybridStorageManager(StorageBackend):
@@ -131,9 +223,14 @@ class HybridStorageManager(StorageBackend):
             with open(config_path, "r", encoding="utf-8") as f:
                 config = yaml.safe_load(f) or {}
 
-        self.hot_store = hot_store or DuckHot()
-        self.warm_store = warm_store or TimescaleWarm()
-        self.cold_store = cold_store or S3Cold()
+        duck_path = cast(str, config.get("duckdb_path", ":memory:"))
+        pg_dsn = cast(str, config.get("postgres_dsn", ""))
+        bucket = cast(str | None, config.get("s3_bucket"))
+        prefix = cast(str, config.get("s3_prefix", ""))
+
+        self.hot_store = hot_store or DuckHot(duck_path)
+        self.warm_store = warm_store or TimescaleWarm(pg_dsn or None)
+        self.cold_store = cold_store or S3Cold(bucket, prefix)
         self.catalog = catalog or Catalog()
         self.tier_order: list[str] = cast(
             list[str], config.get("tier_order", ["hot", "warm", "cold"])

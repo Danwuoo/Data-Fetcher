@@ -4,3 +4,9 @@ tier_order:
   - cold
 hot_capacity: 3
 warm_capacity: 5
+duckdb_path: ":memory:"
+#postgres_dsn 範例: "postgresql://user:pass@localhost:5432/datafetcher"
+postgres_dsn: ""
+s3_bucket: ""
+s3_prefix: ""
+#s3_bucket 範例: "my-bucket"

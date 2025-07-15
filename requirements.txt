@@ -29,3 +29,7 @@ aiomcache
 
 pandas-stubs
 types-PyYAML
+duckdb
+psycopg[binary]
+boto3
+pyarrow
