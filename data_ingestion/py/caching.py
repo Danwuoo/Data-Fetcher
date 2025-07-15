@@ -1,9 +1,27 @@
 import asyncio
 import time
+from abc import ABC, abstractmethod
 from collections import OrderedDict
+from typing import Any
 
 
-class LRUCache:
+class ICache(ABC):
+    """快取介面定義。"""
+
+    @abstractmethod
+    async def get(self, key: str) -> Any | None:
+        """取得快取值，如果不存在則回傳 ``None``。"""
+
+    @abstractmethod
+    async def set(self, key: str, value: Any) -> None:
+        """設定快取值。"""
+
+    @abstractmethod
+    def __contains__(self, key: str) -> bool:
+        """判斷 key 是否存在於快取中。"""
+
+
+class LRUCache(ICache):
     """
     A simple in-memory LRU cache.
     """
@@ -21,7 +39,7 @@ class LRUCache:
         self.cache = OrderedDict()
         self.lock = asyncio.Lock()
 
-    async def get(self, key: str):
+    async def get(self, key: str) -> Any | None:
         """
         Gets an item from the cache.
 
@@ -47,7 +65,7 @@ class LRUCache:
             self.cache.move_to_end(key)
             return value
 
-    async def set(self, key: str, value):
+    async def set(self, key: str, value: Any) -> None:
         """
         Sets an item in the cache.
 
@@ -77,3 +95,6 @@ class LRUCache:
             del self.cache[key]
             return False
         return True
+
+
+__all__ = ["ICache", "LRUCache"]

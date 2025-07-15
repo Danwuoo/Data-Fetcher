@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 from data_ingestion.py.data_source import APIDataSource
 from data_ingestion.py.api_client import ApiClient
 from data_ingestion.py.rate_limiter import RateLimiter
-from data_ingestion.py.caching import LRUCache
+from data_ingestion.py.caching import ICache
 
 
 @pytest.mark.asyncio
@@ -14,7 +14,7 @@ async def test_read_from_cache():
     api_client = AsyncMock(spec=ApiClient)
     api_client.limiters = {}
     rate_limiter = MagicMock(spec=RateLimiter)
-    cache = MagicMock(spec=LRUCache)
+    cache = MagicMock(spec=ICache)
     cache.get = AsyncMock()
     endpoint = "test"
     data_source = APIDataSource(
@@ -44,7 +44,7 @@ async def test_read_from_api():
     api_client = AsyncMock(spec=ApiClient)
     api_client.limiters = {}
     rate_limiter = MagicMock(spec=RateLimiter)
-    cache = MagicMock(spec=LRUCache)
+    cache = MagicMock(spec=ICache)
     cache.get = AsyncMock()
     cache.set = AsyncMock()
     endpoint = "test"
