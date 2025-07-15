@@ -12,9 +12,10 @@ async def main():
     # Configure the cache: 100 items capacity
     cache = LRUCache(capacity=100)
 
-    # 使用 context manager 建立 API client
+    # 使用 context manager 建立 API client，透過 proxy 轉發
     async with ApiClient(
         base_url="https://jsonplaceholder.typicode.com",
+        proxy_base_url="http://localhost:8000",
     ) as api_client:
         api_source = APIDataSource(
             api_client=api_client,

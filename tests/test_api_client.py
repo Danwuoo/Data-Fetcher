@@ -41,3 +41,18 @@ async def test_call_api_retry(httpx_mock):
         response = await api_client.call_api(endpoint)
         assert response == {"data": "success"}
         assert len(httpx_mock.get_requests()) == 2
+
+
+@pytest.mark.asyncio
+async def test_call_api_with_proxy(httpx_mock):
+    base_url = "http://target.com"
+    proxy_url = "http://proxy"
+    endpoint = "foo"
+    httpx_mock.add_response(url=f"{proxy_url}/{endpoint}", json={"ok": True})
+    async with ApiClient(
+        base_url=base_url,
+        proxy_base_url=proxy_url,
+    ) as client:
+        resp = await client.call_api(endpoint)
+        assert resp == {"ok": True}
+        assert len(httpx_mock.get_requests()) == 1

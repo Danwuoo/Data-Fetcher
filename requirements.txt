@@ -10,3 +10,4 @@ pytest-asyncio
 pytest-httpx
 flake8
 pyyaml
+fastapi
