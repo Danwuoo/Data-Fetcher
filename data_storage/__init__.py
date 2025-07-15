@@ -7,6 +7,7 @@ from .storage_backend import (
     S3Cold,
     HybridStorageManager,
 )
+from .catalog import Catalog, CatalogEntry
 
 __all__ = [
     "StorageBackend",
@@ -14,4 +15,6 @@ __all__ = [
     "TimescaleWarm",
     "S3Cold",
     "HybridStorageManager",
+    "Catalog",
+    "CatalogEntry",
 ]

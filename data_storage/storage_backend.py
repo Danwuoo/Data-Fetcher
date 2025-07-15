@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+import hashlib
+from collections import deque
 import pandas as pd
+
+from .catalog import Catalog, CatalogEntry
 
 
 class StorageBackend(ABC):
@@ -97,10 +101,18 @@ class HybridStorageManager(StorageBackend):
         hot_store: StorageBackend | None = None,
         warm_store: StorageBackend | None = None,
         cold_store: StorageBackend | None = None,
+        catalog: Catalog | None = None,
+        hot_capacity: int = 3,
+        warm_capacity: int = 5,
     ) -> None:
         self.hot_store = hot_store or DuckHot()
         self.warm_store = warm_store or TimescaleWarm()
         self.cold_store = cold_store or S3Cold()
+        self.catalog = catalog or Catalog()
+        self.hot_capacity = hot_capacity
+        self.warm_capacity = warm_capacity
+        self._hot_lru: deque[str] = deque()
+        self._warm_lru: deque[str] = deque()
 
     def _backend_for(self, tier: str) -> StorageBackend:
         if tier == "hot":
@@ -111,9 +123,36 @@ class HybridStorageManager(StorageBackend):
             return self.cold_store
         raise ValueError(f"未知的 tier: {tier}")
 
+    def _record_lru(self, lru: deque[str], table: str) -> None:
+        if table in lru:
+            lru.remove(table)
+        lru.append(table)
+
+    def _check_capacity(self) -> None:
+        while len(self.hot_store._tables) > self.hot_capacity:
+            oldest = self._hot_lru.popleft()
+            self.migrate(oldest, "hot", "warm")
+        while len(self.warm_store._tables) > self.warm_capacity:
+            oldest = self._warm_lru.popleft()
+            self.migrate(oldest, "warm", "cold")
+
     def write(self, df: pd.DataFrame, table: str, tier: str = "hot") -> None:
         backend = self._backend_for(tier)
         backend.write(df, table)
+
+        schema_hash = hashlib.sha256(str(df.dtypes.to_dict()).encode()).hexdigest()
+        self.catalog.upsert(
+            CatalogEntry(
+                table_name=table, tier=tier, location=tier, schema_hash=schema_hash
+            )
+        )
+
+        if tier == "hot":
+            self._record_lru(self._hot_lru, table)
+        elif tier == "warm":
+            self._record_lru(self._warm_lru, table)
+
+        self._check_capacity()
 
     def read(
         self, table: str, tiers: list[str] | None = None
@@ -137,3 +176,17 @@ class HybridStorageManager(StorageBackend):
         df = src.read(table)
         dst.write(df, table)
         src.delete(table)
+
+        self.catalog.update_tier(table, dst_tier, dst_tier)
+
+        if src_tier == "hot" and table in self._hot_lru:
+            self._hot_lru.remove(table)
+        if src_tier == "warm" and table in self._warm_lru:
+            self._warm_lru.remove(table)
+
+        if dst_tier == "warm":
+            self._record_lru(self._warm_lru, table)
+        elif dst_tier == "hot":
+            self._record_lru(self._hot_lru, table)
+
+        self._check_capacity()
