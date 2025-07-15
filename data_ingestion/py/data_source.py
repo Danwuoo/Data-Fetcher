@@ -12,9 +12,9 @@ class APIDataSource:
     def __init__(
         self,
         api_client: ApiClient,
-        rate_limiter: RateLimiter,
         cache: LRUCache,
         endpoint: str,
+        rate_limiter: RateLimiter | None = None,
     ):
         """
         Initializes the APIDataSource.
@@ -27,9 +27,11 @@ class APIDataSource:
             endpoint: The API endpoint to fetch data from.
         """
         self.api_client = api_client
-        self.rate_limiter = rate_limiter
         self.cache = cache
         self.endpoint = endpoint
+        self.rate_limiter = rate_limiter
+        if rate_limiter is not None:
+            api_client.limiters[endpoint] = rate_limiter
 
     async def read(self, params: dict = None):
         """
@@ -47,7 +49,6 @@ class APIDataSource:
         if cached_data is not None:
             return cached_data
 
-        await self.rate_limiter.acquire()
         data = await self.api_client.call_api(self.endpoint, params)
         await self.cache.set(cache_key, data)
         return data
