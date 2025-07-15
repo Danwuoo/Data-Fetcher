@@ -24,3 +24,9 @@ recent = manager.read('prices')
 manager.migrate('prices', 'hot', 'cold')
 ```
 
+
+## S3 設定建議
+
+Cold tier 使用 S3 儲存時，建議開啟版本控管（Versioning），確保檔案更新不會覆蓋舊資料。
+若需跨區域備援，可啟用 Cross-Region Replication 並指定次要 Bucket，
+確保主要區域故障時仍能在其他區域存取資料。

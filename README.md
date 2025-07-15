@@ -93,6 +93,8 @@ prefect deployment run data-pipeline
 ```
 
 處理後的資料會存入 `HybridStorageManager` 管理的 Hot/Warm/Cold 層級，詳細說明請參考 [`docs/data_storage.md`](docs/data_storage.md)。
+Cold tier 使用 S3 時，建議開啟 Versioning 並設定跨區域複製，以確保災難復原需求。
+
 
 ## 監控
 
