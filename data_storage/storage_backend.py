@@ -164,7 +164,12 @@ class HybridStorageManager(StorageBackend):
         schema_hash = hashlib.sha256(str(df.dtypes.to_dict()).encode()).hexdigest()
         self.catalog.upsert(
             CatalogEntry(
-                table_name=table, tier=tier, location=tier, schema_hash=schema_hash
+                table_name=table,
+                tier=tier,
+                location=tier,
+                schema_hash=schema_hash,
+                row_count=len(df),
+                lineage="write",
             )
         )
 
