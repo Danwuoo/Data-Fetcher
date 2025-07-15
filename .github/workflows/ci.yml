@@ -7,6 +7,12 @@ on:
   pull_request:
     paths-ignore:
       - '**/*.md'
+  workflow_dispatch:
+    inputs:
+      run_locust:
+        description: '執行 Locust 壓力測試'
+        required: false
+        default: 'false'
 
 jobs:
   lint-and-test:
@@ -25,12 +31,19 @@ jobs:
           pip install mkdocs mkdocs-material mkdocstrings[python]
       - name: 執行 Flake8
         run: flake8 .
+      - name: 驗證 steps.yaml
+        run: python -m zxq.pipeline.loader steps.yaml
       - name: 執行 pytest
         run: pytest --cov
+
 
   deploy-docs:
     needs: lint-and-test
     if: github.ref == 'refs/heads/main'
+
+  stress-test:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_locust == 'true' }}
+
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -42,6 +55,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
           pip install mkdocs mkdocs-material mkdocstrings[python]
       - name: 產生文件
         run: mkdocs build
@@ -51,3 +65,13 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: site
           cname: docs.zxquant.dev
+
+          pip install locust uvicorn
+      - name: 啟動 Proxy 服務
+        run: |
+          uvicorn 'data_ingestion.proxy:create_proxy_app("https://jsonplaceholder.typicode.com")' --factory --port 8000 &
+          sleep 5
+      - name: 執行 Locust 壓力測試
+        run: |
+          locust -f stress/locust_proxy.py --headless -u 100 -r 100 -t 1m --host http://localhost:8000
+

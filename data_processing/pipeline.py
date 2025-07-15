@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
-from data_processing.pipeline_step import PipelineStep
+from zxq.pipeline.pipeline_step import PipelineStep
 from metrics import PROCESSING_STEP_COUNTER
 
 

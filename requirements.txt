@@ -14,7 +14,12 @@ fastapi
 
 prefect
 prometheus-client
+
 typer
 mkdocs
 mkdocs-material
 mkdocstrings[python]
+
+locust
+uvicorn
+
