@@ -50,3 +50,46 @@ pytest
    ```bash
    prefect agent start -q default
    ```
+
+## 速率限制設定檔
+
+`RateLimiter` 可透過 `rate_limits.yml` 讀取多組速率限制，格式如下：
+
+```yaml
+global:
+  calls: 100
+  period: 60
+  burst: 100
+api_keys:
+  default:
+    calls: 5
+    period: 1
+    burst: 5
+endpoints:
+  example:
+    calls: 10
+    period: 1
+    burst: 10
+```
+
+在程式中可使用 `RateLimiter.from_config("default", "example")` 建立實例，隨時重新載入檔案內容。
+
+## 啟動 Proxy 服務
+
+Proxy 透過 FastAPI 以及 `create_proxy_app()` 建立。使用 `uvicorn --factory` 啟動並指定目標 API：
+
+```bash
+uvicorn 'data_ingestion.proxy:create_proxy_app("https://api.example.com")' --factory --port 8000
+```
+
+建議 `fastapi>=0.110`、`uvicorn>=0.23`。
+
+## DAG 執行與儲存架構
+
+Prefect Flow `data_pipeline_flow` 可透過部署檔案觸發：
+
+```bash
+prefect deployment run data-pipeline
+```
+
+處理後的資料會存入 `HybridStorageManager` 管理的 Hot/Warm/Cold 層級，詳細說明請參考 [`docs/data_storage.md`](docs/data_storage.md)。
