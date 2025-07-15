@@ -3,6 +3,7 @@ import asyncio
 import os
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 from data_ingestion.py.rate_limiter import RateLimiter
+from data_ingestion.py.redis_rate_limiter import RedisRateLimiter
 from data_ingestion.metrics import REQUEST_COUNTER
 from data_ingestion.py.middleware import RateLimitMiddleware
 
@@ -15,8 +16,8 @@ class ApiClient:
     def __init__(
         self,
         base_url: str,
-        limiters: dict[str, RateLimiter] | None = None,
-        default_limiter: RateLimiter | None = None,
+        limiters: dict[str, RateLimiter | RedisRateLimiter] | None = None,
+        default_limiter: RateLimiter | RedisRateLimiter | None = None,
         proxy_base_url: str | None = None,
         max_concurrency: int | None = int(os.getenv("CONCURRENCY", 0)),
         batch_size: int = int(os.getenv("BATCH_SIZE", 1)),

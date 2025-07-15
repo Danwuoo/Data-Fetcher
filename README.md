@@ -92,6 +92,30 @@ endpoints:
 ```
 
 在程式中可使用 `RateLimiter.from_config("default", "example")` 建立實例，隨時重新載入檔案內容。若 `rate_limits.yml` 更新，可呼叫 `data_ingestion.reload_limits()` 立即套用新限制。
+若需多程序共用速率限制，可傳入 `redis_url`：
+
+```python
+from redis.asyncio import Redis
+limiter = RateLimiter.from_config(
+    "default",
+    "example",
+    redis_url="redis://localhost:6379",
+)
+```
+
+亦可直接使用 `RedisRateLimiter`：
+
+```python
+from data_ingestion.py.redis_rate_limiter import RedisRateLimiter
+from redis.asyncio import Redis
+
+limiter = RedisRateLimiter(
+    redis=Redis.from_url("redis://localhost:6379"),
+    key="example",
+    calls=10,
+    period=1,
+)
+```
 ## 啟動 Proxy 服務
 
 Proxy 透過 FastAPI 以及 `create_proxy_app()` 建立。使用 `uvicorn --factory` 啟動並指定目標 API：

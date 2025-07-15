@@ -23,5 +23,8 @@ mkdocstrings[python]
 locust
 uvicorn
 
+redis
+fakeredis
+
 pandas-stubs
 types-PyYAML
