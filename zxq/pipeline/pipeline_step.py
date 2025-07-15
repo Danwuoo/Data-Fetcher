@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from typing import Optional
+
 import pandas as pd
 import pandera as pa
 
@@ -10,9 +12,9 @@ class PipelineStep(ABC):
 
     def __init__(
         self,
-        input_schema: pa.DataFrameSchema = None,
-        output_schema: pa.DataFrameSchema = None,
-    ):
+        input_schema: Optional[pa.DataFrameSchema] = None,
+        output_schema: Optional[pa.DataFrameSchema] = None,
+    ) -> None:
         """
         Initializes the PipelineStep.
 

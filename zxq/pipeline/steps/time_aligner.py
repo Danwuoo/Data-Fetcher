@@ -18,10 +18,10 @@ class TimeAligner(PipelineStep):
         """
         self.resample_rule = resample_rule
         self.time_column = time_column
-        input_schema = pa.DataFrameSchema({
+        input_schema = pa.DataFrameSchema({  # type: ignore[no-untyped-call]
             time_column: pa.Column(pa.DateTime)
         })
-        output_schema = pa.DataFrameSchema({
+        output_schema = pa.DataFrameSchema({  # type: ignore[no-untyped-call]
             time_column: pa.Column(pa.DateTime),
         })
         super().__init__(

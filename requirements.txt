@@ -23,3 +23,5 @@ mkdocstrings[python]
 locust
 uvicorn
 
+pandas-stubs
+types-PyYAML

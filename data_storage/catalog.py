@@ -1,7 +1,13 @@
-import sqlite3
+from __future__ import annotations
+
 import hashlib
+import sqlite3
 from dataclasses import dataclass
 from datetime import datetime
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover - type checking imports
+    from .storage_backend import HybridStorageManager
 
 
 @dataclass
@@ -113,7 +119,9 @@ def send_slack_alert(message: str, webhook_url: str | None = None) -> None:
         pass
 
 
-def check_drift(manager, webhook_url: str | None = None) -> list[str]:
+def check_drift(
+    manager: "HybridStorageManager", webhook_url: str | None = None
+) -> list[str]:
     """重新計算 schema hash，若不一致則警告並更新紀錄。"""
     from .storage_backend import HybridStorageManager
 

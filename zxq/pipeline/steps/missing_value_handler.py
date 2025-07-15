@@ -2,12 +2,15 @@ import pandas as pd
 from zxq.pipeline.pipeline_step import PipelineStep
 
 
+from typing import Any
+
+
 class MissingValueHandler(PipelineStep):
     """
     A pipeline step to handle missing values in a DataFrame.
     """
 
-    def __init__(self, strategy: str = 'fill', fill_value=None):
+    def __init__(self, strategy: str = 'fill', fill_value: Any | None = None) -> None:
         """
         Initializes the MissingValueHandler.
 
