@@ -8,6 +8,7 @@ from .storage_backend import (
     HybridStorageManager,
 )
 from .catalog import Catalog, CatalogEntry, send_slack_alert, check_drift
+from .migrations import init_duck, init_timescale, ensure_bucket
 
 __all__ = [
     "StorageBackend",
@@ -19,4 +20,7 @@ __all__ = [
     "CatalogEntry",
     "send_slack_alert",
     "check_drift",
+    "init_duck",
+    "init_timescale",
+    "ensure_bucket",
 ]
