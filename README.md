@@ -103,3 +103,13 @@ sum(rate(data_ingestion_429_total[1m])) > 100
 ```
 
 更多細節請見 [`docs/monitoring.md`](docs/monitoring.md)。
+
+## 稽核工具
+
+安裝後可使用 `zxq` 指令查詢 Catalog 內容，例如：
+
+```bash
+zxq audit trace my_table --db catalog.db
+```
+
+此指令會顯示表格所處層級與位置，方便追蹤資料 lineage。

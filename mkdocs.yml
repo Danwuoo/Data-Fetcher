@@ -1,0 +1,17 @@
+site_name: ZXQ Data-Fetcher
+site_url: https://docs.zxquant.dev
+nav:
+  - Home: index.md
+  - 指南:
+      - 多層級儲存: data_storage.md
+      - 監控與警報設定: monitoring.md
+  - API:
+      - Data Storage: reference/data_storage.md
+      - Data Ingestion: reference/data_ingestion.md
+plugins:
+  - search
+  - mkdocstrings
+theme:
+  name: material
+markdown_extensions:
+  - admonition
