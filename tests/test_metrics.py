@@ -2,13 +2,17 @@ import asyncio
 import random
 import httpx
 import pytest
+from unittest.mock import AsyncMock
 
 from data_ingestion.py.api_client import ApiClient
 from data_ingestion.py.rate_limiter import RateLimiter
+from data_ingestion.py.caching import LRUCache
+from data_ingestion.py.data_source import APIDataSource
 from data_ingestion.metrics import (
     REQUEST_COUNTER,
     REMAINING_GAUGE,
     RATE_LIMIT_429_COUNTER,
+    CACHE_HIT_RATIO,
     start_metrics_server,
 )
 
@@ -53,3 +57,25 @@ async def test_metrics_server_running():
         resp = await client.get(f"http://localhost:{port}/metrics")
     assert resp.status_code == 200
     assert "data_ingestion_requests_total" in resp.text
+
+
+@pytest.mark.asyncio
+async def test_cache_hit_ratio():
+    api_client = AsyncMock(spec=ApiClient)
+    api_client.limiters = {}
+    api_client.call_api = AsyncMock(return_value={"ok": True})
+    cache = LRUCache(capacity=2)
+    endpoint = "ratio"
+    data_source = APIDataSource(
+        api_client=api_client,
+        cache=cache,
+        endpoint=endpoint,
+    )
+
+    await data_source.read({"x": 1})  # miss
+    ratio_after_miss = CACHE_HIT_RATIO.labels(endpoint=endpoint)._value.get()
+    assert ratio_after_miss == 0
+
+    await data_source.read({"x": 1})  # hit
+    ratio_after_hit = CACHE_HIT_RATIO.labels(endpoint=endpoint)._value.get()
+    assert ratio_after_hit == pytest.approx(0.5)

@@ -1,0 +1,6 @@
+tier_order:
+  - hot
+  - warm
+  - cold
+hot_capacity: 3
+warm_capacity: 5

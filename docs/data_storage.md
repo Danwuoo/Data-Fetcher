@@ -25,8 +25,19 @@ manager.migrate('prices', 'hot', 'cold')
 ```
 
 
+
 ## S3 設定建議
 
 Cold tier 使用 S3 儲存時，建議開啟版本控管（Versioning），確保檔案更新不會覆蓋舊資料。
 若需跨區域備援，可啟用 Cross-Region Replication 並指定次要 Bucket，
 確保主要區域故障時仍能在其他區域存取資料。
+=======
+## 指令操作範例
+
+透過 `zxq` 指令亦可移動資料表，例如：
+
+```bash
+zxq storage migrate --table prices --to warm
+```
+
+加入 `--dry-run` 參數則僅顯示預計動作而不實際執行。

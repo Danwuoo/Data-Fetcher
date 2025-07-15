@@ -3,7 +3,7 @@ import time
 import asyncio
 import pytest
 import yaml
-from data_ingestion.py.rate_limiter import RateLimiter
+from data_ingestion.py.rate_limiter import RateLimiter, reload_limits
 
 
 @pytest.mark.asyncio
@@ -89,3 +89,24 @@ async def test_reload_config(tmp_path):
     # After 1 second, the bucket should be full again
     for _ in range(5):
         await limiter.acquire()
+
+
+@pytest.mark.asyncio
+async def test_reload_limits_function(tmp_path):
+    """reload_limits() 應更新所有活躍的 limiter。"""
+    config = {"api_keys": {"k": {"calls": 1, "period": 1, "burst": 1}}}
+    path = tmp_path / "rate.yml"
+    path.write_text(yaml.dump(config), encoding="utf-8")
+
+    limiter1 = RateLimiter.from_config("k", "", config_path=str(path))
+    limiter2 = RateLimiter.from_config("k", "", config_path=str(path))
+
+    config["api_keys"]["k"]["calls"] = 3
+    config["api_keys"]["k"]["burst"] = 3
+    path.write_text(yaml.dump(config), encoding="utf-8")
+    os.utime(path, None)
+
+    reload_limits()
+
+    assert limiter1.calls == 3
+    assert limiter2.calls == 3
