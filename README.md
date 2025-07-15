@@ -145,10 +145,21 @@ sum(rate(data_ingestion_429_total[1m])) > 100
 
 更多細節請見 [`docs/monitoring.md`](docs/monitoring.md)。
 
+
+## 稽核工具
+
+安裝後可使用 `zxq` 指令查詢 Catalog 內容，例如：
+
+```bash
+zxq audit trace my_table --db catalog.db
+```
+
+此指令會顯示表格所處層級與位置，方便追蹤資料 lineage。
+
 ## 壓力測試
 
 可使用 Locust 模擬大量請求，腳本位於 [`docs/stress_test.md`](docs/stress_test.md)。
-=======
+
 
 ## 版本標籤與 CHANGELOG
 
@@ -163,7 +174,7 @@ sum(rate(data_ingestion_429_total[1m])) > 100
 ## CI 工作流程
 
 本庫的 GitHub Actions (`.github/workflows/ci.yml`) 會在推送或 PR 時自動執行 Flake8 與 pytest，僅於程式碼變更時觸發，文件修改則不會執行。
-=======
+
 ## Catalog 漂移檢查
 
 `pipelines/catalog_drift.py` 內建 Prefect 排程，每日 0 點自動呼叫
@@ -177,5 +188,6 @@ sum(rate(data_ingestion_429_total[1m])) > 100
 - [FeatureEngineer](docs/steps/FeatureEngineer.md)
 - [MissingValueHandler](docs/steps/MissingValueHandler.md)
 - [TimeAligner](docs/steps/TimeAligner.md)
+
 
 
