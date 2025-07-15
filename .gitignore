@@ -1,4 +1,6 @@
 __pycache__/
+.coverage
+pipeline_log.csv
 *.pyc
 *.pyo
 *.pyd

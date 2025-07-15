@@ -5,7 +5,6 @@ import httpx
 import smtplib
 
 
-
 class Notifier(ABC):
     """通知介面，所有通知方式皆應實作 send 方法。"""
 

@@ -1,10 +1,12 @@
 import httpx
 import asyncio
 import os
+import time
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 from data_ingestion.py.rate_limiter import RateLimiter
 from data_ingestion.py.redis_rate_limiter import RedisRateLimiter
 from data_ingestion.metrics import REQUEST_COUNTER
+from data_ingestion.py.adaptive_controller import AdaptiveController
 from data_ingestion.py.middleware import RateLimitMiddleware
 
 
@@ -36,9 +38,11 @@ class ApiClient:
         self.limiters = limiters or {}
         self.default_limiter = default_limiter
         self.batch_size = max(batch_size, 1)
+        self.max_concurrency = max_concurrency or 0
         self.semaphore = (
-            asyncio.Semaphore(max_concurrency) if max_concurrency else None
+            asyncio.Semaphore(self.max_concurrency) if self.max_concurrency else None
         )
+        self.controller = AdaptiveController(self.batch_size, self.max_concurrency)
 
     async def __aenter__(self):
         """建立並回傳非同步 HTTP session。"""
@@ -84,10 +88,17 @@ class ApiClient:
         if self.proxy_base_url:
             url = f"{self.proxy_base_url}/{endpoint}"
         try:
+            start = time.monotonic()
             if self.semaphore:
                 async with self.semaphore:
-                    return await self._execute_request(url, params)
-            return await self._execute_request(url, params)
+                    resp = await self._execute_request(url, params)
+            else:
+                resp = await self._execute_request(url, params)
+            latency = time.monotonic() - start
+            remaining = resp.headers.get("X-RateLimit-Remaining")
+            self.controller.record(latency, int(remaining) if remaining else None)
+            self._apply_controller()
+            return resp.json()
         except httpx.HTTPStatusError as e:
             raise e
         except httpx.TimeoutException:
@@ -101,7 +112,7 @@ class ApiClient:
         """實際執行 HTTP 請求並處理例外。"""
         response = await self.session.get(url, params=params)
         response.raise_for_status()
-        return response.json()
+        return response
 
     async def call_batch(self, endpoints: list[tuple[str, dict]]):
         """批次呼叫多個 API，會依據 ``batch_size`` 分段執行。"""
@@ -114,3 +125,15 @@ class ApiClient:
             ]
             results.extend(await asyncio.gather(*tasks))
         return results
+
+    def _apply_controller(self) -> None:
+        new_batch, new_conc = self.controller.get_params()
+        if new_batch != self.batch_size:
+            self.batch_size = new_batch
+        if new_conc != self.max_concurrency:
+            self.max_concurrency = new_conc
+            self.semaphore = (
+                asyncio.Semaphore(self.max_concurrency)
+                if self.max_concurrency
+                else None
+            )
