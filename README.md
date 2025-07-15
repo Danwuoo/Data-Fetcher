@@ -90,6 +90,18 @@ Proxy 透過 FastAPI 以及 `create_proxy_app()` 建立。使用 `uvicorn --fact
 uvicorn 'data_ingestion.proxy:create_proxy_app("https://api.example.com")' --factory --port 8000
 ```
 
+### Docker Compose 快速啟動
+
+倉庫內已提供 `docker-compose.yml` 及 `proxy/conf` 下的 NGINX 設定檔，
+可直接啟動 NGINX 與 FastAPI Proxy 組成的服務：
+
+```bash
+docker compose up --build
+```
+
+Nginx 會在本機的 80 連接埠對外服務，FastAPI 於容器內的 8000
+連接埠執行，可透過 `PROXY_TARGET` 環境變數調整轉發目標。
+
 建議 `fastapi>=0.110`、`uvicorn>=0.23`。
 
 ## DAG 執行與儲存架構
