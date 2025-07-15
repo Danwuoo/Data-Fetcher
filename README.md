@@ -114,6 +114,15 @@ prefect deployment run data-pipeline
 
 處理後的資料會存入 `HybridStorageManager` 管理的 Hot/Warm/Cold 層級，詳細說明請參考 [`docs/data_storage.md`](docs/data_storage.md)。
 
+### Airflow DAG 觸發範例
+
+啟動 Airflow 後，可透過下列指令手動觸發 `ingest_process_dag`：
+
+```bash
+airflow dags trigger ingest_process_dag
+```
+
+
 ## 監控
 
 使用 `metrics.start_exporter()` 啟動 Prometheus 指標服務，Grafana 可連至對應的 Prometheus URL 建立儀表板。警報範例：
