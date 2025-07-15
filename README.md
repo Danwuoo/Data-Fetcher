@@ -103,3 +103,17 @@ sum(rate(data_ingestion_429_total[1m])) > 100
 ```
 
 更多細節請見 [`docs/monitoring.md`](docs/monitoring.md)。
+
+## 版本標籤與 CHANGELOG
+
+透過 `scripts/tag_with_changelog.sh` 建立版本標籤，可自動更新 `docs/CHANGELOG.md`：
+
+```bash
+./scripts/tag_with_changelog.sh v1.0.0 "初始版本"
+```
+
+此腳本會執行 `git tag` 並在 CHANGELOG 新增一行記錄。
+
+## CI 工作流程
+
+本庫的 GitHub Actions (`.github/workflows/ci.yml`) 會在推送或 PR 時自動執行 Flake8 與 pytest，僅於程式碼變更時觸發，文件修改則不會執行。
