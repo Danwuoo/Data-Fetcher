@@ -72,8 +72,7 @@ endpoints:
     burst: 10
 ```
 
-在程式中可使用 `RateLimiter.from_config("default", "example")` 建立實例，隨時重新載入檔案內容。
-
+在程式中可使用 `RateLimiter.from_config("default", "example")` 建立實例，隨時重新載入檔案內容。若 `rate_limits.yml` 更新，可呼叫 `data_ingestion.reload_limits()` 立即套用新限制。
 ## 啟動 Proxy 服務
 
 Proxy 透過 FastAPI 以及 `create_proxy_app()` 建立。使用 `uvicorn --factory` 啟動並指定目標 API：
