@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 from abc import ABC, abstractmethod
 from collections import deque
+from datetime import timedelta
 from typing import List, Dict, Any, Tuple
 
 import numpy as np
@@ -69,7 +70,7 @@ class Execution:
 
     def place_order(self, order: OrderEvent, timestamp: float):
         delay = self.latency_model.get_delay()
-        execution_time = timestamp + delay
+        execution_time = timestamp + timedelta(seconds=delay)
         self.order_queue.append((order, execution_time))
 
     def process_orders(

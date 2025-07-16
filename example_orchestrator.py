@@ -41,7 +41,7 @@ def main():
         "portfolio_params": {"initial_cash": 100000},
     }
     print("Running walk-forward backtest...")
-    orchestrator.run(walk_forward_config, data)
+    orchestrator.run_ray(walk_forward_config, data)
     orchestrator.to_json("walk_forward_results.json")
     orchestrator.generate_reports()
     print("Walk-forward backtest complete. Results saved to walk_forward_results.json")
@@ -50,15 +50,15 @@ def main():
     cpcv_config = {
         "run_id": "cpcv_example",
         "cpcv": {
-            "n_splits": 10,
-            "n_test_splits": 2,
-            "embargo": 5,
+            "N": 10,
+            "k": 2,
+            "embargo_pct": 0.05,
         },
         "strategy_params": {"short_window": 10, "long_window": 30},
         "portfolio_params": {"initial_cash": 100000},
     }
     print("\nRunning CPCV backtest...")
-    orchestrator.run(cpcv_config, data)
+    orchestrator.run_ray(cpcv_config, data)
     orchestrator.to_json("cpcv_results.json")
     orchestrator.generate_reports()
     print("CPCV backtest complete. Results saved to cpcv_results.json")
