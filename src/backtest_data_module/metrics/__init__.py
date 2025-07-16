@@ -1,5 +1,5 @@
 from prometheus_client import Counter, Gauge, Histogram, start_http_server
-from data_ingestion.metrics import (
+from backtest_data_module.data_ingestion.metrics import (
     REQUEST_COUNTER,
     RATE_LIMIT_429_COUNTER,
     REMAINING_GAUGE,

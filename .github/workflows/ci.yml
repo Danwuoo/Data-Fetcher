@@ -26,18 +26,16 @@ jobs:
       - name: 安裝依賴
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install flake8 pytest pytest-cov
-          pip install mypy
-          pip install mkdocs mkdocs-material mkdocstrings[python]
+          pip install -e .
+          pip install flake8 pytest pytest-cov mypy great_expectations
       - name: 執行 Flake8
         run: flake8 .
       - name: 執行 mypy
-        run: mypy --strict zxq/
-      - name: 驗證 steps.yaml
-        run: python -m zxq.pipeline.loader steps.yaml
+        run: mypy --strict src/
       - name: 執行 pytest
         run: pytest --cov
+      - name: 驗證 Great Expectations Schemas
+        run: great_expectations suite list
 
 
   deploy-docs:

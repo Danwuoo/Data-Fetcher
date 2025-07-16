@@ -5,8 +5,8 @@ import weakref
 import yaml
 from typing import Any, cast
 from redis.asyncio import Redis
-from data_ingestion.metrics import REMAINING_GAUGE, RATE_LIMIT_429_COUNTER
-from data_ingestion.py.redis_rate_limiter import RedisRateLimiter
+from backtest_data_module.data_ingestion.metrics import REMAINING_GAUGE, RATE_LIMIT_429_COUNTER
+from backtest_data_module.data_ingestion.py.redis_rate_limiter import RedisRateLimiter
 
 # 追蹤所有已建立的 RateLimiter，方便統一重新載入設定
 _ACTIVE_LIMITERS: "weakref.WeakSet[RateLimiter]" = weakref.WeakSet()

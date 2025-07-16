@@ -8,7 +8,8 @@ import json
 from typing import Any, cast, DefaultDict
 from datetime import datetime, timedelta
 
-import pandas as pd
+import polars as pl
+import pyarrow as pa
 import yaml
 import duckdb
 import psycopg
@@ -16,7 +17,7 @@ import boto3
 import io
 
 from .catalog import Catalog, CatalogEntry
-from metrics import (
+from backtest_data_module.metrics import (
     STORAGE_WRITE_COUNTER,
     STORAGE_READ_COUNTER,
     MIGRATION_LATENCY_MS,
@@ -30,13 +31,13 @@ class StorageBackend(ABC):
 
     @abstractmethod
     def write(
-        self, df: pd.DataFrame, table: str, *, metadata: dict[str, object] | None = None
+        self, df: pl.DataFrame, table: str, *, metadata: dict[str, object] | None = None
     ) -> None:
         """寫入資料到指定表格，metadata 可附帶額外資訊。"""
         raise NotImplementedError
 
     @abstractmethod
-    def read(self, table: str) -> pd.DataFrame:
+    def read(self, table: str) -> pl.DataFrame:
         """根據表格名稱讀取資料。"""
         raise NotImplementedError
 
@@ -54,19 +55,18 @@ class DuckHot(StorageBackend):
         self._tables: set[str] = set()
 
     def write(
-        self, df: pd.DataFrame, table: str, *, metadata: dict[str, object] | None = None
+        self, df: pl.DataFrame, table: str, *, metadata: dict[str, object] | None = None
     ) -> None:
-        self.con.register("tmp", df)
+        self.con.register("tmp", df.to_arrow())
         self.con.execute(
-            f"CREATE TABLE IF NOT EXISTS {table} AS SELECT * FROM tmp WHERE FALSE"
+            f"CREATE OR REPLACE TABLE {table} AS SELECT * FROM tmp"
         )
-        self.con.execute(f"INSERT INTO {table} SELECT * FROM tmp")
         self.con.unregister("tmp")
         self._tables.add(table)
 
-    def read(self, table: str) -> pd.DataFrame:
+    def read(self, table: str) -> pl.DataFrame:
         try:
-            return self.con.execute(f"SELECT * FROM {table}").fetchdf()
+            return self.con.execute(f"SELECT * FROM {table}").pl()
         except duckdb.CatalogException as e:
             raise KeyError(table) from e
 
@@ -89,56 +89,28 @@ class TimescaleWarm(StorageBackend):
             self.use_pg = False
         self._tables: set[str] = set()
 
-    def _create_table(self, df: pd.DataFrame, table: str) -> None:
-        cols = []
-        for name, dtype in df.dtypes.items():
-            if pd.api.types.is_integer_dtype(dtype):
-                col_type = "INTEGER"
-            elif pd.api.types.is_float_dtype(dtype):
-                col_type = "DOUBLE PRECISION"
-            elif pd.api.types.is_bool_dtype(dtype):
-                col_type = "BOOLEAN"
-            else:
-                col_type = "TEXT"
-            cols.append(f'"{name}" {col_type}')
-        cols_sql = ", ".join(cols)
-        if self.use_pg:
-            with self.conn.cursor() as cur:
-                cur.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ({cols_sql})')
-            self.conn.commit()
-        else:
-            self.conn.execute(
-                f"CREATE TABLE IF NOT EXISTS {table} ({cols_sql})"
-            )
-
     def write(
-        self, df: pd.DataFrame, table: str, *, metadata: dict[str, object] | None = None
+        self, df: pl.DataFrame, table: str, *, metadata: dict[str, object] | None = None
     ) -> None:
         if self.use_pg:
-            self._create_table(df, table)
-            with self.conn.cursor() as cur:
-                placeholders = ",".join(["%s"] * len(df.columns))
-                insert_sql = f'INSERT INTO "{table}" VALUES ({placeholders})'
-                for row in df.itertuples(index=False, name=None):
-                    cur.execute(insert_sql, row)
-            self.conn.commit()
+            # TODO: Implement a more efficient way to write to PostgreSQL
+            df.to_pandas().to_sql(table, self.conn, if_exists="replace", index=False)
         else:
-            self.conn.register("tmp", df)
+            self.conn.register("tmp", df.to_arrow())
             self.conn.execute(
-                f"CREATE TABLE IF NOT EXISTS {table} AS SELECT * FROM tmp WHERE FALSE"
+                f"CREATE OR REPLACE TABLE {table} AS SELECT * FROM tmp"
             )
-            self.conn.execute(f"INSERT INTO {table} SELECT * FROM tmp")
             self.conn.unregister("tmp")
         self._tables.add(table)
 
-    def read(self, table: str) -> pd.DataFrame:
+    def read(self, table: str) -> pl.DataFrame:
         if self.use_pg:
             try:
-                return pd.read_sql(f'SELECT * FROM "{table}"', self.conn)
+                return pl.read_sql(f"SELECT * FROM {table}", self.conn)
             except Exception as e:  # psycopg throws errors for missing table
                 raise KeyError(table) from e
         try:
-            return self.conn.execute(f"SELECT * FROM {table}").fetchdf()
+            return self.conn.execute(f"SELECT * FROM {table}").pl()
         except duckdb.CatalogException as e:
             raise KeyError(table) from e
 
@@ -165,17 +137,17 @@ class S3Cold(StorageBackend):
         self.bucket = bucket
         self.prefix = prefix
         self.s3 = s3_client or (boto3.client("s3") if bucket else None)
-        self._tables: dict[str, pd.DataFrame] | None = {} if bucket is None else None
+        self._tables: dict[str, pl.DataFrame] | None = {} if bucket is None else None
 
     def _key(self, table: str) -> str:
         return f"{self.prefix}{table}.parquet"
 
     def write(
-        self, df: pd.DataFrame, table: str, *, metadata: dict[str, object] | None = None
+        self, df: pl.DataFrame, table: str, *, metadata: dict[str, object] | None = None
     ) -> None:
         if self.s3:
             buf = io.BytesIO()
-            df.to_parquet(buf, index=False)
+            df.write_parquet(buf)
             buf.seek(0)
             self.s3.put_object(
                 Bucket=self.bucket,
@@ -184,13 +156,13 @@ class S3Cold(StorageBackend):
             )
         else:
             assert self._tables is not None
-            self._tables[table] = df.copy()
+            self._tables[table] = df.clone()
 
-    def read(self, table: str) -> pd.DataFrame:
+    def read(self, table: str) -> pl.DataFrame:
         if self.s3:
             try:
                 obj = self.s3.get_object(Bucket=self.bucket, Key=self._key(table))
-                return pd.read_parquet(io.BytesIO(obj["Body"].read()))
+                return pl.read_parquet(io.BytesIO(obj["Body"].read()))
             except Exception as e:
                 raise KeyError(table) from e
         assert self._tables is not None
@@ -319,7 +291,7 @@ class HybridStorageManager(StorageBackend):
 
     def write(
         self,
-        df: pd.DataFrame,
+        df: pl.DataFrame,
         table: str,
         *,
         tier: str = "hot",
@@ -329,16 +301,15 @@ class HybridStorageManager(StorageBackend):
         backend = self._backend_for(tier)
         meta = metadata.copy() if metadata else {}
         if lineage_id:
-            df.attrs["lineage_id"] = lineage_id
             meta["lineage_id"] = lineage_id
         backend.write(df, table, metadata=meta or None)
         STORAGE_WRITE_COUNTER.labels(tier=tier).inc()
 
-        schema_hash = hashlib.sha256(str(df.dtypes.to_dict()).encode()).hexdigest()
+        schema_hash = hashlib.sha256(str(df.schema).encode()).hexdigest()
         partition_data = {}
         for col in ("date", "asset"):
             if col in df.columns:
-                partition_data[col] = str(df[col].iloc[0])
+                partition_data[col] = str(df[col][0])
         self.catalog.upsert(
             CatalogEntry(
                 table_name=table,
@@ -363,7 +334,7 @@ class HybridStorageManager(StorageBackend):
 
     def read(
         self, table: str, *, tiers: list[str] | None = None
-    ) -> pd.DataFrame:
+    ) -> pl.DataFrame:
         tiers = tiers or self.tier_order
         for tier in tiers:
             backend = self._backend_for(tier)

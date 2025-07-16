@@ -1,53 +1,49 @@
-# 多層級儲存策略
+# Multi-Tiered Storage Strategy
 
-本專案採用 Hot、Warm、Cold 三層級架構，以取得效能與成本之平衡：
+This project uses a Hot, Warm, and Cold three-tiered architecture to balance performance and cost:
 
-- **Hot**：以記憶體或 Redis、DuckDB In-Memory 儲存，適用於 7 天內的即時查詢，並可透過 `RedisRateLimiter` 共享速率限制。
-- **Warm**：採用 TimescaleDB/PostgreSQL，適合 30~180 天的歷史資料與特徵工程。
-- **Cold**：將長期資料以 Parquet 存放在 S3 或 MinIO，可保留數年。
+- **Hot**: Stored in-memory using DuckDB, suitable for real-time queries within 7 days.
+- **Warm**: Uses TimescaleDB/PostgreSQL, suitable for historical data and feature engineering from 30 to 180 days.
+- **Cold**: Stores long-term data as Parquet files in S3 or MinIO, which can be retained for several years.
 
-`HybridStorageManager` 會根據資料表所在層級讀寫資料並在容量達到上限時自動下移：
+The `DataHandler` class provides a unified interface for interacting with the tiered storage system. It uses the `HybridStorageManager` to read and write data to the appropriate tier and automatically moves data down when capacity limits are reached.
 
 ```python
-import pandas as pd
-from data_storage import HybridStorageManager
+import polars as pl
+from backtest_data_module.data_handler import DataHandler
+from backtest_data_module.data_storage.storage_backend import HybridStorageManager
 
-manager = HybridStorageManager()
+# Initialize the DataHandler
+storage_manager = HybridStorageManager()
+data_handler = DataHandler(storage_manager)
 
-# 寫入資料到 Hot tier
-manager.write(pd.DataFrame({'a': [1, 2]}), 'prices', tier='hot')
+# Write data to the hot tier
+data_handler.storage_manager.write(pl.DataFrame({'a': [1, 2]}), 'prices', tier='hot')
 
-# 讀取資料，未指定 tier 將自動從較熱的層級開始查詢
-recent = manager.read('prices')
+# Read data, automatically starting from the hottest tier
+recent = data_handler.read('prices')
 
-# 移動資料到 Cold tier
-manager.migrate('prices', 'hot', 'cold')
+# Migrate data to the cold tier
+data_handler.migrate('prices', 'hot', 'cold')
 ```
 
+## S3 Configuration Recommendations
 
+When using S3 for the cold tier, it is recommended to enable versioning to ensure that file updates do not overwrite old data. For cross-region backup, you can enable Cross-Region Replication and specify a secondary bucket to ensure data access in case of a primary region failure.
 
-## S3 設定建議
+## Command-Line Operations
 
-Cold tier 使用 S3 儲存時，建議開啟版本控管（Versioning），確保檔案更新不會覆蓋舊資料。
-若需跨區域備援，可啟用 Cross-Region Replication 並指定次要 Bucket，
-確保主要區域故障時仍能在其他區域存取資料。
-=======
-## 指令操作範例
-
-透過 `zxq` 指令亦可移動資料表，例如：
+You can also move data tables using the `zxq` command-line tool:
 
 ```bash
 zxq storage migrate --table prices --to warm
 ```
 
-加入 `--dry-run` 參數則僅顯示預計動作而不實際執行。
+Adding the `--dry-run` parameter will only show the intended actions without actually executing them.
 
-## 命中率統計與自動遷移
+## Hit Rate Statistics and Automatic Migration
 
-`HybridStorageManager` 會記錄每個表格的讀取時間。預設每天由 Prefect 任務
-計算近七日的命中次數，若 Hot tier 使用率超過 `hot_usage_threshold` 且
-某表格的七日讀取次數低於 `low_hit_threshold`，系統會將其自動遷移至
-Warm 或 Cold 層級。相關參數可於 `storage.yaml` 中調整：
+The `HybridStorageManager` records the access time for each table. By default, a Prefect task calculates the number of hits for each table in the last seven days. If the hot tier usage exceeds `hot_usage_threshold` and a table's seven-day hit count is below `low_hit_threshold`, the system will automatically migrate it to the warm or cold tier. These parameters can be adjusted in the `storage.yaml` file:
 
 ```yaml
 low_hit_threshold: 2
@@ -55,5 +51,4 @@ hot_usage_threshold: 0.8
 hit_stats_schedule: "0 1 * * *"
 ```
 
-`pipelines/hit_stats.py` 已提供示範 Flow，可透過 `prefect deployment build`
-產生部署檔後排程執行。
+The `pipelines/hit_stats.py` file provides an example flow that can be scheduled to run after being deployed with `prefect deployment build`.
