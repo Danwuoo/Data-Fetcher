@@ -1,19 +1,26 @@
 from __future__ import annotations
 
-import cupy as cp
+try:
+    import cupy as cp
+except Exception:  # noqa: BLE001
+    cp = None
+
 
 class Profiler:
     def __init__(self):
         self.kernels = []
 
     def start(self):
-        cp.cuda.profiler.start()
+        if cp:
+            cp.cuda.profiler.start()
 
     def stop(self):
-        cp.cuda.profiler.stop()
+        if cp:
+            cp.cuda.profiler.stop()
 
     def get_kernels(self):
-        self.kernels = cp.cuda.profiler.get_sorted_kernels()
+        if cp:
+            self.kernels = cp.cuda.profiler.get_sorted_kernels()
         return self.kernels
 
     def print_report(self):
