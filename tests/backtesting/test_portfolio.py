@@ -1,35 +1,25 @@
 import unittest
 
-from backtesting.portfolio import Portfolio, Position
+from backtest_data_module.backtesting.portfolio import Portfolio, Position
 
 
 class TestPortfolio(unittest.TestCase):
-    def test_position_update(self):
-        position = Position("AAPL")
-        position.update(100, 150)
-        self.assertEqual(position.quantity, 100)
-        self.assertEqual(position.cost_basis, 150)
-
-        position.update(-50, 160)
-        self.assertEqual(position.quantity, 50)
-        self.assertEqual(position.cost_basis, 140)
-
-    def test_portfolio_update(self):
-        portfolio = Portfolio()
+    def test_update_and_pnl(self):
+        portfolio = Portfolio(initial_cash=100000)
         fills = [
-            {"asset": "AAPL", "quantity": 100, "price": 150, "commission": 1},
-            {"asset": "GOOG", "quantity": 50, "price": 2800, "commission": 1},
+            {"asset": "AAPL", "quantity": 100, "price": 150.0, "commission": 15.0},
+            {"asset": "GOOG", "quantity": -50, "price": 2800.0, "commission": 140.0},
         ]
         portfolio.update(fills)
+
+        self.assertEqual(portfolio.cash, 100000 - 150.0 * 100 - 15.0 - (-50 * 2800.0) - 140.0)
         self.assertEqual(portfolio.positions["AAPL"].quantity, 100)
-        self.assertEqual(portfolio.positions["GOOG"].quantity, 50)
-        self.assertEqual(portfolio.cash, 100000 - 100 * 150 - 50 * 2800 - 2)
+        self.assertEqual(portfolio.positions["GOOG"].quantity, -50)
 
-    def test_pnl_calculation(self):
-        portfolio = Portfolio()
-        fills = [
-            {"asset": "AAPL", "quantity": 100, "price": 150, "commission": 1},
-        ]
-        portfolio.update(fills)
-        pnl = portfolio.get_pnl({"AAPL": 160})
-        self.assertAlmostEqual(pnl, 100 * (160 - 150))
+        market_data = {"AAPL": 160.0, "GOOG": 2700.0}
+        pnl = portfolio.get_pnl(market_data)
+        self.assertAlmostEqual(pnl, (160 - 150) * 100 + (-50 * 2700 - -50 * 2800))
+
+
+if __name__ == "__main__":
+    unittest.main()

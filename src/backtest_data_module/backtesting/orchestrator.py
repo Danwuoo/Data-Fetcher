@@ -5,19 +5,19 @@ from typing import List, Dict, Type
 
 import pandas as pd
 
-from backtesting.engine import Backtest
-from backtesting.events import MarketData
-from backtesting.execution import Execution
-from backtesting.performance import Performance
-from backtesting.portfolio import Portfolio
-from backtesting.strategy import Strategy
-from data_processing.cross_validation import (
+from backtest_data_module.backtesting.engine import Backtest
+from backtest_data_module.backtesting.events import MarketEvent
+from backtest_data_module.backtesting.execution import Execution
+from backtest_data_module.backtesting.performance import Performance
+from backtest_data_module.backtesting.portfolio import Portfolio
+from backtest_data_module.backtesting.strategy import StrategyBase
+from backtest_data_module.data_processing.cross_validation import (
     combinatorial_purged_cv,
     walk_forward_split,
 )
-from data_processing.data_handler import DataHandler
-from utils.json_encoder import CustomJSONEncoder
-from reporting.report import ReportModule
+from backtest_data_module.data_handler import DataHandler
+from backtest_data_module.utils.json_encoder import CustomJSONEncoder
+from backtest_data_module.reporting.report import ReportModule
 
 
 class Orchestrator:

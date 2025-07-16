@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Dict, List, Any
 
 
 class Position:
@@ -32,11 +32,29 @@ class Position:
         return (current_price - self.cost_basis) * self.quantity
 
 
+class RiskManager:
+    def __init__(self, position_limit: int = 100):
+        self.position_limit = position_limit
+
+    def check_risk(self, portfolio: Portfolio, asset: str, quantity: float) -> bool:
+        if asset in portfolio.positions:
+            current_quantity = portfolio.positions[asset].quantity
+            if abs(current_quantity + quantity) > self.position_limit:
+                return False
+        return True
+
+
 class Portfolio:
-    def __init__(self, initial_cash: float = 100000.0):
+    def __init__(
+        self,
+        initial_cash: float = 100000.0,
+        risk_manager: RiskManager = RiskManager(),
+    ):
         self.cash = initial_cash
         self.positions: Dict[str, Position] = {}
         self.fills: List[Dict] = []
+        self.risk_manager = risk_manager
+        self.context: Dict[str, Any] = {}
 
     def update(self, fills: List[Dict]):
         for fill in fills:
@@ -44,6 +62,10 @@ class Portfolio:
             quantity = fill["quantity"]
             price = fill["price"]
             commission = fill["commission"]
+
+            if not self.risk_manager.check_risk(self, asset, quantity):
+                # For now, we just skip the fill if it violates the risk rules
+                continue
 
             self.cash -= quantity * price + commission
             if asset not in self.positions:
@@ -56,7 +78,7 @@ class Portfolio:
             position.realized_pnl for position in self.positions.values()
         )
         unrealized_pnl = sum(
-            position.unrealized_pnl(market_data[asset])
+            position.unrealized_pnl(market_data.get(asset, 0))
             for asset, position in self.positions.items()
         )
         return realized_pnl + unrealized_pnl

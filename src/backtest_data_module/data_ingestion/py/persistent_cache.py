@@ -6,7 +6,7 @@ from typing import Any
 from redis.asyncio import Redis
 import aiomcache
 
-from .caching import ICache
+from backtest_data_module.data_ingestion.py.caching import ICache
 
 
 class RedisCache(ICache):

@@ -5,7 +5,7 @@ import shutil
 import asyncio
 import redis.asyncio as redis
 
-from data_ingestion.py.redis_rate_limiter import RedisRateLimiter
+from backtest_data_module.data_ingestion.py.redis_rate_limiter import RedisRateLimiter
 
 
 @pytest.mark.asyncio

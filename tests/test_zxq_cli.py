@@ -1,5 +1,5 @@
 from typer.testing import CliRunner
-from zxq import app
+from backtest_data_module.zxq import app
 from data_storage import Catalog, CatalogEntry
 
 

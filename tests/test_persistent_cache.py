@@ -2,7 +2,7 @@ import pickle
 from unittest.mock import AsyncMock
 import pytest
 
-from data_ingestion.py.persistent_cache import RedisCache, MemcachedCache
+from backtest_data_module.data_ingestion.py.persistent_cache import RedisCache, MemcachedCache
 
 
 @pytest.mark.asyncio

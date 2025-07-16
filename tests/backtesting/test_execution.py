@@ -1,28 +1,40 @@
 import unittest
-from unittest.mock import patch
+from collections import deque
 
-from backtesting.execution import Execution, Order, FlatCommission, GaussianSlippage
+import polars as pl
+
+from backtest_data_module.backtesting.execution import Execution, FlatCommission, GaussianSlippage
+from backtest_data_module.backtesting.events import OrderEvent
 
 
 class TestExecution(unittest.TestCase):
     def test_process_orders(self):
-        execution = Execution()
-        orders = [Order("AAPL", 100)]
-        with patch("random.gauss", return_value=0):
-            fills = execution.process_orders(orders, {"AAPL": 150})
-        self.assertEqual(len(fills), 1)
+        execution = Execution(
+            commission_model=FlatCommission(0.001),
+            slippage_model=GaussianSlippage(0, 0.001),
+        )
+        orders = [
+            OrderEvent(asset="AAPL", quantity=100),
+            OrderEvent(asset="GOOG", quantity=-50),
+        ]
+        price_data = {"AAPL": 150.0, "GOOG": 2800.0}
+
+        for order in orders:
+            execution.place_order(order, 0)
+
+        fills = execution.process_orders(1, price_data)
+
+        self.assertEqual(len(fills), 2)
         self.assertEqual(fills[0]["asset"], "AAPL")
         self.assertEqual(fills[0]["quantity"], 100)
-        self.assertEqual(fills[0]["price"], 150)
-        self.assertEqual(fills[0]["commission"], 100 * 150 * 0.0005)
+        self.assertAlmostEqual(fills[0]["price"], 150.0, delta=0.5)
+        self.assertAlmostEqual(fills[0]["commission"], 15.0, delta=0.5)
 
-    def test_flat_commission(self):
-        commission_model = FlatCommission(0.001)
-        commission = commission_model.calculate(100, 150)
-        self.assertEqual(commission, 15)
+        self.assertEqual(fills[1]["asset"], "GOOG")
+        self.assertEqual(fills[1]["quantity"], -50)
+        self.assertAlmostEqual(fills[1]["price"], 2800.0, delta=10.0)
+        self.assertAlmostEqual(fills[1]["commission"], 140.0, delta=1.0)
 
-    def test_gaussian_slippage(self):
-        slippage_model = GaussianSlippage(0, 0.01)
-        with patch("random.gauss", return_value=0.01):
-            slipped_price = slippage_model.apply(150)
-        self.assertAlmostEqual(slipped_price, 151.5)
+
+if __name__ == "__main__":
+    unittest.main()

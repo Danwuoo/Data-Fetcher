@@ -1,7 +1,7 @@
 import json
 import os
 import unittest
-from reporting.report import ReportModule
+from backtest_data_module.reporting.report import ReportModule
 
 
 class TestReportModule(unittest.TestCase):

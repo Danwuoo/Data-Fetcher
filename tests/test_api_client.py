@@ -2,7 +2,7 @@ import asyncio
 import pytest
 import httpx
 from httpx import Response
-from data_ingestion.py.api_client import ApiClient
+from backtest_data_module.data_ingestion.py.api_client import ApiClient
 from data_ingestion.py.rate_limiter import RateLimiter
 
 

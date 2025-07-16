@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from backtesting.performance import Performance
+from backtest_data_module.backtesting.performance import Performance
 
 
 class TestPerformance(unittest.TestCase):

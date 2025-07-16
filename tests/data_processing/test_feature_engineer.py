@@ -2,8 +2,8 @@ import unittest
 import pandas as pd
 import sys
 sys.path.append('.')
-from zxq.pipeline.steps.feature_engineer import FeatureEngineer
-from zxq.pipeline.steps.schema_validator import SchemaValidatorStep
+from backtest_data_module.zxq.pipeline.steps.feature_engineer import FeatureEngineer
+from backtest_data_module.zxq.pipeline.steps.schema_validator import SchemaValidatorStep
 
 
 class TestFeatureEngineer(unittest.TestCase):

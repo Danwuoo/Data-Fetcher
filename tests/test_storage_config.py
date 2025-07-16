@@ -1,6 +1,6 @@
 import pandas as pd
 import yaml
-from data_storage import HybridStorageManager
+from backtest_data_module.data_storage import HybridStorageManager
 
 
 def test_manager_reads_config(tmp_path):

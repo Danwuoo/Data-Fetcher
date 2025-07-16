@@ -3,8 +3,8 @@ import pandas as pd
 import numpy as np
 import sys
 sys.path.append('.')
-from zxq.pipeline.steps.missing_value_handler import MissingValueHandler
-from zxq.pipeline.steps.schema_validator import SchemaValidatorStep
+from backtest_data_module.zxq.pipeline.steps.missing_value_handler import MissingValueHandler
+from backtest_data_module.zxq.pipeline.steps.schema_validator import SchemaValidatorStep
 
 
 class TestMissingValueHandler(unittest.TestCase):

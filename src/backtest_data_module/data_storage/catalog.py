@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from backtest_data_module.utils.notify import Notifier, SlackNotifier
 
 if TYPE_CHECKING:  # pragma: no cover - type checking imports
-    from .storage_backend import HybridStorageManager
+    from backtest_data_module.data_storage.storage_backend import HybridStorageManager
 
 
 @dataclass

@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from data_storage import HybridStorageManager
+from backtest_data_module.data_storage import HybridStorageManager
 from metrics import MIGRATION_LATENCY_MS, TIER_HIT_RATE
 
 

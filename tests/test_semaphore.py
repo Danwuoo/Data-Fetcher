@@ -3,7 +3,7 @@ import httpx
 import pytest
 from fastapi import FastAPI
 
-from data_ingestion.py.api_client import ApiClient
+from backtest_data_module.data_ingestion.py.api_client import ApiClient
 
 
 @pytest.mark.asyncio

@@ -1,36 +1,38 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, Union
 
-import pandas as pd
+import numpy as np
+import polars as pl
 
-from backtesting.execution import Order
-from backtesting.strategy import Strategy
-from backtesting.events import MarketData
+from backtest_data_module.backtesting.events import SignalEvent
+from backtest_data_module.backtesting.strategy import StrategyBase
 
 
-class SmaCrossover(Strategy):
-    def __init__(self, short_window: int = 50, long_window: int = 200):
-        self.short_window = short_window
-        self.long_window = long_window
+class SmaCrossover(StrategyBase):
+    def __init__(self, params: dict):
+        super().__init__(params)
+        self.short_window = params.get("short_window", 10)
+        self.long_window = params.get("long_window", 30)
         self.prices = {}
-        self.invested = False
 
-    def on_data(self, event: MarketData) -> List[Order]:
-        orders = []
-        for asset, data in event.data.items():
-            if asset not in self.prices:
-                self.prices[asset] = []
-            self.prices[asset].append(data["close"])
+    def on_data(self, event: Union[np.ndarray, pl.DataFrame]) -> List[SignalEvent]:
+        signals = []
+        asset = list(event.data.keys())[0]
+        price = event.data[asset]["close"]
 
-            if len(self.prices[asset]) > self.long_window:
-                short_sma = pd.Series(self.prices[asset]).rolling(self.short_window).mean().iloc[-1]
-                long_sma = pd.Series(self.prices[asset]).rolling(self.long_window).mean().iloc[-1]
+        if asset not in self.prices:
+            self.prices[asset] = []
+        self.prices[asset].append(price)
 
-                if short_sma > long_sma and not self.invested:
-                    orders.append(Order(asset, 1))
-                    self.invested = True
-                elif short_sma < long_sma and self.invested:
-                    orders.append(Order(asset, -1))
-                    self.invested = False
-        return orders
+        if len(self.prices[asset]) > self.long_window:
+            short_sma = np.mean(self.prices[asset][-self.short_window :])
+            long_sma = np.mean(self.prices[asset][-self.long_window :])
+
+            if short_sma > long_sma:
+                signals.append(SignalEvent(asset=asset, quantity=100, direction="long"))
+            elif short_sma < long_sma:
+                signals.append(
+                    SignalEvent(asset=asset, quantity=-100, direction="short")
+                )
+        return signals

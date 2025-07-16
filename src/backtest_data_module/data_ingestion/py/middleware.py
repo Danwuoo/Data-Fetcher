@@ -3,8 +3,8 @@ from __future__ import annotations
 import asyncio
 import httpx
 
-from .rate_limiter import RateLimiter
-from .redis_rate_limiter import RedisRateLimiter
+from backtest_data_module.data_ingestion.py.rate_limiter import RateLimiter
+from backtest_data_module.data_ingestion.py.redis_rate_limiter import RedisRateLimiter
 
 
 class RateLimitMiddleware:

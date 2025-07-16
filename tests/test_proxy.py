@@ -1,7 +1,7 @@
 import time
 import pytest
 import httpx
-from data_ingestion.proxy import create_proxy_app
+from backtest_data_module.data_ingestion.proxy import create_proxy_app
 from data_ingestion.py.rate_limiter import RateLimiter
 from data_ingestion.py.caching import LRUCache
 

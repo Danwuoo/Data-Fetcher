@@ -1,7 +1,7 @@
 import unittest
 import sys
 sys.path.append('.')
-from data_processing.cross_validation import purged_k_fold
+from backtest_data_module.data_processing.cross_validation import purged_k_fold
 
 
 class TestPurgedKFold(unittest.TestCase):
