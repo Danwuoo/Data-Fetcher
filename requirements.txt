@@ -4,7 +4,7 @@ ratelimit
 pandas
 pandera
 scikit-learn
-numpy
+numpy>=2.0.0
 pytest
 pytest-asyncio
 pytest-httpx

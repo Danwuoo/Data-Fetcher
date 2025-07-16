@@ -32,21 +32,14 @@ class Backtest:
         self.results = {}
 
     def run(self):
-        self.events.append(MarketEvent())
+        signals = self.strategy.on_data(self.data)
+        for signal in signals:
+            self.events.append(signal)
 
         while self.events:
             event = self.events.popleft()
 
-            if isinstance(event, MarketEvent):
-                # In a real system, this would be a stream of data
-                # For simplicity, we iterate through the dataframe
-                for row in self.data.iter_rows(named=True):
-                    market_event = MarketEvent(data={row["asset"]: row})
-                    signals = self.strategy.on_data(market_event)
-                    for signal in signals:
-                        self.events.append(signal)
-
-            elif isinstance(event, SignalEvent):
+            if isinstance(event, SignalEvent):
                 # Simple logic to convert signals to orders
                 order = OrderEvent(
                     asset=event.asset,
@@ -61,29 +54,35 @@ class Backtest:
                 timestamp = self.data.filter(pl.col("asset") == event.asset).select("date").row(0)[0]
                 self.execution.place_order(event, timestamp)
 
-            # Process orders at the current time
-            if isinstance(event, MarketEvent):
-                timestamp = self.data.select("date").row(0)[0] # Placeholder for current time
-                fills = self.execution.process_orders(timestamp, event.data)
-                for fill in fills:
-                    self.events.append(FillEvent(**fill))
-
             elif isinstance(event, FillEvent):
                 self.portfolio.update([event.__dict__])
 
-            # Update portfolio performance
-            if isinstance(event, (MarketEvent, FillEvent)):
-                # This part needs to be improved to get the current price
-                # For now, we just use the last known price
-                last_prices = self.data.group_by("asset").last().select(["asset", "close"]).to_dict()
-                last_prices = {a: p for a, p in zip(last_prices['asset'], last_prices['close'])}
-                self.performance.nav_series.append(
-                    self.portfolio.cash
-                    + sum(
-                        p.market_value(last_prices.get(asset, 0))
-                        for asset, p in self.portfolio.positions.items()
-                    )
+        # Process all orders at the end of the backtest
+        for timestamp in self.data["date"].unique():
+            market_data_at_timestamp = self.data.filter(pl.col("date") == timestamp).to_dict(as_series=False)
+            market_data_dict = {}
+            for i in range(len(market_data_at_timestamp["asset"])):
+                asset = market_data_at_timestamp["asset"][i]
+                market_data_dict[asset] = {
+                    "close": market_data_at_timestamp["close"][i]
+                }
+
+            fills = self.execution.process_orders(timestamp, market_data_dict)
+            for fill in fills:
+                 self.portfolio.update([fill])
+
+
+        # Update portfolio performance
+        for timestamp in self.data["date"].unique():
+            last_prices = self.data.filter(pl.col("date") <= timestamp).group_by("asset").last().select(["asset", "close"]).to_dict()
+            last_prices = {a: p for a, p in zip(last_prices['asset'], last_prices['close'])}
+            self.performance.nav_series.append(
+                self.portfolio.cash
+                + sum(
+                    p.market_value(last_prices.get(asset, 0))
+                    for asset, p in self.portfolio.positions.items()
                 )
+            )
 
         self.performance.returns = (
             np.diff(self.performance.nav_series) / self.performance.nav_series[:-1]

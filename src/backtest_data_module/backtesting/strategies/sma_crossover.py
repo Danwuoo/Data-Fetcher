@@ -14,25 +14,42 @@ class SmaCrossover(StrategyBase):
         super().__init__({})
         self.short_window = short_window
         self.long_window = long_window
-        self.prices = {}
 
-    def on_data(self, event: Union[np.ndarray, pl.DataFrame]) -> List[SignalEvent]:
+    def on_data(self, data: pl.DataFrame) -> List[SignalEvent]:
         signals = []
-        asset = list(event.data.keys())[0]
-        price = event.data[asset]["close"]
+        for asset in data["asset"].unique():
+            asset_data = data.filter(pl.col("asset") == asset)
 
-        if asset not in self.prices:
-            self.prices[asset] = []
-        self.prices[asset].append(price)
+            # Calculate SMAs
+            asset_data = asset_data.with_columns(
+                pl.col("close")
+                .rolling_mean(window_size=self.short_window)
+                .alias("short_sma")
+            )
+            asset_data = asset_data.with_columns(
+                pl.col("close")
+                .rolling_mean(window_size=self.long_window)
+                .alias("long_sma")
+            )
 
-        if len(self.prices[asset]) > self.long_window:
-            short_sma = np.mean(self.prices[asset][-self.short_window :])
-            long_sma = np.mean(self.prices[asset][-self.long_window :])
+            # Generate signals
+            asset_data = asset_data.with_columns(
+                pl.when(asset_data["short_sma"] > asset_data["long_sma"])
+                .then(1)
+                .when(asset_data["short_sma"] < asset_data["long_sma"])
+                .then(-1)
+                .otherwise(0)
+                .alias("signal")
+            )
 
-            if short_sma > long_sma:
-                signals.append(SignalEvent(asset=asset, quantity=100, direction="long"))
-            elif short_sma < long_sma:
-                signals.append(
-                    SignalEvent(asset=asset, quantity=-100, direction="short")
-                )
+            # Create SignalEvents
+            for row in asset_data.iter_rows(named=True):
+                if row["signal"] == 1:
+                    signals.append(
+                        SignalEvent(asset=asset, quantity=100, direction="long")
+                    )
+                elif row["signal"] == -1:
+                    signals.append(
+                        SignalEvent(asset=asset, quantity=-100, direction="short")
+                    )
         return signals
