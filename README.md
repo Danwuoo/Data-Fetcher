@@ -211,6 +211,48 @@ zxq audit trace my_table --db catalog.db
 `catalog_drift_flow()` 以比對 Catalog 與實際資料的 schema。若發現
 不一致，可透過設定 `SLACK_WEBHOOK_URL` 環境變數接收警報。
 
+## Performance Analytics
+
+The `backtest_data_module.backtesting.performance` module provides a `Performance` class to calculate various performance metrics from a series of Net Asset Values (NAV).
+
+### Available Metrics
+
+-   **Sharpe Ratio**: Measures the performance of an investment compared to a risk-free asset, after adjusting for its risk.
+-   **Sortino Ratio**: A variation of the Sharpe ratio that differentiates harmful volatility from total overall volatility by using the asset's standard deviation of negative portfolio returns—downside deviation—instead of the total standard deviation of portfolio returns.
+-   **Max Drawdown**: The maximum observed loss from a peak to a trough of a portfolio, before a new peak is attained.
+-   **Max Drawdown Duration**: The maximum number of consecutive periods during which the portfolio is in a drawdown.
+-   **Cornish-Fisher VaR**: A Value at Risk (VaR) calculation that adjusts for skewness and kurtosis in the returns distribution.
+
+### Usage
+
+```python
+from backtest_data_module.backtesting.performance import Performance
+
+nav_series = [100, 110, 105, 115, 110, 120]
+perf = Performance(nav_series)
+metrics = perf.compute_metrics()
+
+print(metrics.to_json())
+```
+
+### CPCV
+
+The `backtest_data_module.data_processing.cross_validation` module provides functions for Combinatorial Purged Cross-Validation (CPCV).
+
+```python
+from backtest_data_module.data_processing.cross_validation import run_cpcv
+import pandas as pd
+import numpy as np
+
+def mock_strategy(train_data, test_data):
+    return pd.Series(np.random.randn(len(test_data)).cumsum() + 100)
+
+data = pd.DataFrame({"feature": np.random.randn(100)})
+results = run_cpcv(data, mock_strategy, n_splits=5, n_test_splits=2, embargo_pct=0.05)
+
+print(results.aggregate_stats())
+```
+
 ## Pipeline 步驟範例
 
 下列文件展示各處理步驟執行前後的資料變化：
