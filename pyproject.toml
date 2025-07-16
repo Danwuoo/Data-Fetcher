@@ -1,0 +1,50 @@
+[tool.poetry]
+name = "backtest-data-module"
+version = "0.1.0"
+description = "A backtesting and data module for quantitative finance."
+authors = ["Your Name <you@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+httpx = "*"
+tenacity = "*"
+ratelimit = "*"
+pandas = "*"
+pandera = "*"
+polars = "*"
+scikit-learn = "*"
+numpy = "*"
+pytest = "*"
+pytest-asyncio = "*"
+pytest-httpx = "*"
+flake8 = "*"
+pyyaml = "*"
+fastapi = "*"
+prefect = "*"
+prometheus-client = "*"
+typer = "*"
+mkdocs = "*"
+mkdocs-material = "*"
+locust = "*"
+uvicorn = "*"
+redis = "*"
+fakeredis = "*"
+aiomcache = "*"
+pandas-stubs = "*"
+types-PyYAML = "*"
+duckdb = "*"
+boto3 = "*"
+pyarrow = "*"
+kafka-python = "*"
+matplotlib = "*"
+reportlab = "*"
+mkdocstrings = {extras = ["python"], version = "*"}
+psycopg = {extras = ["binary"], version = "*"}
+
+[tool.poetry.group.dev.dependencies]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+packages = [{ include = "backtest_data_module", from = "src" }]

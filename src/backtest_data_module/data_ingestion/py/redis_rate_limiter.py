@@ -4,7 +4,7 @@ import asyncio
 import time
 from redis.asyncio import Redis
 
-from data_ingestion.metrics import REMAINING_GAUGE, RATE_LIMIT_429_COUNTER
+from backtest_data_module.data_ingestion.metrics import REMAINING_GAUGE, RATE_LIMIT_429_COUNTER
 
 _LUA_SCRIPT = """
 local calls = tonumber(ARGV[1])

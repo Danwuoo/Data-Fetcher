@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from utils.notify import Notifier, SlackNotifier
+from backtest_data_module.utils.notify import Notifier, SlackNotifier
 
 if TYPE_CHECKING:  # pragma: no cover - type checking imports
     from .storage_backend import HybridStorageManager
