@@ -17,6 +17,7 @@ from data_processing.cross_validation import (
 )
 from data_processing.data_handler import DataHandler
 from utils.json_encoder import CustomJSONEncoder
+from reporting.report import ReportModule
 
 
 class Orchestrator:
@@ -34,8 +35,14 @@ class Orchestrator:
         self.execution_cls = execution_cls
         self.performance_cls = performance_cls
         self.results = {}
+        self.run_id = None
+        self.strategy_name = None
+        self.hyperparams = None
 
     def run(self, config: dict, data: pd.DataFrame) -> List[dict]:
+        self.run_id = config.get("run_id")
+        self.strategy_name = self.strategy_cls.__name__
+        self.hyperparams = config.get("strategy_params", {})
         results = []
         if "walk_forward" in config:
             wf_config = config["walk_forward"]
@@ -101,9 +108,27 @@ class Orchestrator:
                     "metrics": backtest.results["performance"],
                 }
                 results.append(slice_results)
-        self.results = {"run_id": config.get("run_id"), "slices": results}
+        self.results = {"run_id": self.run_id, "slices": results}
         return results
 
     def to_json(self, filepath: str):
         with open(filepath, "w") as f:
             json.dump(self.results, f, indent=4, cls=CustomJSONEncoder)
+
+    def generate_reports(self, output_dir: str = "."):
+        if not self.run_id:
+            raise ValueError("Run ID not set. Please run a backtest first.")
+
+        report_module = ReportModule(
+            self.run_id, self.results, self.strategy_name, self.hyperparams
+        )
+
+        # Generate JSON report
+        json_report = report_module.generate_json()
+        json_filepath = f"{output_dir}/{self.run_id}_report.json"
+        with open(json_filepath, "w") as f:
+            f.write(json_report)
+
+        # Generate PDF report
+        pdf_filepath = f"{output_dir}/{self.run_id}_report.pdf"
+        report_module.generate_pdf(pdf_filepath)

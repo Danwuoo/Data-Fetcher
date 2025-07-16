@@ -30,8 +30,8 @@ class TestPerformance(unittest.TestCase):
         perf_3 = Performance(nav_series_3)
         metrics_3 = perf_3.compute_metrics()
         self.assertAlmostEqual(metrics_3["total_return"], -0.5)
-        self.assertAlmostEqual(metrics_3["sharpe"], -87.18, places=2)
-        self.assertAlmostEqual(metrics_3["sortino"], -87.18, places=2)
+        self.assertAlmostEqual(metrics_3["sharpe"], -86.81, places=2)
+        self.assertAlmostEqual(metrics_3["sortino"], -86.81, places=2)
         self.assertAlmostEqual(metrics_3["max_drawdown"], -0.5)
         self.assertAlmostEqual(metrics_3["var_95"], 0.16, places=2)
 

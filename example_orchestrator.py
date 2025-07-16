@@ -43,6 +43,7 @@ def main():
     print("Running walk-forward backtest...")
     orchestrator.run(walk_forward_config, data)
     orchestrator.to_json("walk_forward_results.json")
+    orchestrator.generate_reports()
     print("Walk-forward backtest complete. Results saved to walk_forward_results.json")
 
     # Run a CPCV backtest
@@ -59,6 +60,7 @@ def main():
     print("\nRunning CPCV backtest...")
     orchestrator.run(cpcv_config, data)
     orchestrator.to_json("cpcv_results.json")
+    orchestrator.generate_reports()
     print("CPCV backtest complete. Results saved to cpcv_results.json")
 
 
