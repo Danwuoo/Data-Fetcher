@@ -4,6 +4,11 @@ version = "0.1.0"
 description = "A backtesting and data module for quantitative finance."
 authors = ["Your Name <you@example.com>"]
 
+packages = [{ include = "backtest_data_module", from = "src" }]
+
+[tool.poetry.scripts]
+zxq = "backtest_data_module.zxq.cli:app"
+
 [tool.poetry.dependencies]
 python = "^3.12"
 httpx = "*"
@@ -47,5 +52,3 @@ cupy-cuda11x = "*"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-packages = [{ include = "backtest_data_module", from = "src" }]

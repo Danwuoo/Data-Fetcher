@@ -1,6 +1,7 @@
 # Backtest-Data-Module
 
 [![CI](https://github.com/Danwuoo/Backtest-Data-Module/actions/workflows/ci.yml/badge.svg)](https://github.com/Danwuoo/Backtest-Data-Module/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/Danwuoo/Backtest-Data-Module/branch/main/graph/badge.svg)](https://codecov.io/gh/Danwuoo/Backtest-Data-Module)
 [![PyPI](https://img.shields.io/pypi/v/backtest-data-module.svg)](https://pypi.org/project/backtest-data-module/)
 [![License](https://img.shields.io/github/license/Danwuoo/Backtest-Data-Module.svg)](LICENSE)
 
@@ -38,6 +39,10 @@ python example.py
 ```bash
 zxq walk-forward 10 3 2 2
 ```
+
+## 版本管理
+
+本專案遵循 [Semantic Versioning](https://semver.org/lang/zh-TW/)。
 
 更多資訊請參閱本倉庫內的文件及 `docs/` 目錄。
 

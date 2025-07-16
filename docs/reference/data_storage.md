@@ -1,3 +1,3 @@
 # data_storage API
 
-::: data_storage.storage_backend
+::: backtest_data_module.data_storage.storage_backend
