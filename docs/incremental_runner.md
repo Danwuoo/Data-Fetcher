@@ -21,7 +21,7 @@ runner.run_forever()
 
 ## 讀取結果
 ```python
-from data_storage.storage_backend import HybridStorageManager
+from backtest_data_module.data_storage.storage_backend import HybridStorageManager
 
 manager = HybridStorageManager()
 latest = manager.read("prices_clean")
