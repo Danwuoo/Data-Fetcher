@@ -40,3 +40,5 @@ zxq walk-forward 10 3 2 2
 ```
 
 更多資訊請參閱本倉庫內的文件及 `docs/` 目錄。
+
+想參與開發或回報安全性問題，請參閱 [貢獻指南](CONTRIBUTING.md)、[行為準則](CODE_OF_CONDUCT.md) 與 [安全性政策](SECURITY.md)。
