@@ -1,4 +1,4 @@
-site_name: ZXQ Data-Fetcher
+site_name: ZXQ Backtest-Data-Module
 site_url: https://docs.zxquant.dev
 nav:
   - Home: index.md
