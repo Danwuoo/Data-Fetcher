@@ -1,6 +1,6 @@
 import smtplib
 import httpx
-from utils.notify import SlackNotifier, PagerDutyNotifier, EmailNotifier
+from backtest_data_module.utils.notify import SlackNotifier, PagerDutyNotifier, EmailNotifier
 
 
 def test_slack_notifier(monkeypatch):

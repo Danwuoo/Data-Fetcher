@@ -3,11 +3,11 @@ import asyncio
 import os
 import time
 from tenacity import retry, wait_random_exponential, stop_after_attempt
-from data_ingestion.py.rate_limiter import RateLimiter
-from data_ingestion.py.redis_rate_limiter import RedisRateLimiter
-from data_ingestion.metrics import REQUEST_COUNTER
-from data_ingestion.py.adaptive_controller import AdaptiveController
-from data_ingestion.py.middleware import RateLimitMiddleware
+from backtest_data_module.data_ingestion.py.rate_limiter import RateLimiter
+from backtest_data_module.data_ingestion.py.redis_rate_limiter import RedisRateLimiter
+from backtest_data_module.data_ingestion.metrics import REQUEST_COUNTER
+from backtest_data_module.data_ingestion.py.adaptive_controller import AdaptiveController
+from backtest_data_module.data_ingestion.py.middleware import RateLimitMiddleware
 
 
 class ApiClient:

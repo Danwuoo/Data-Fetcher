@@ -3,8 +3,8 @@ import pandas as pd
 from unittest.mock import MagicMock
 import sys
 sys.path.append('.')
-from data_processing.data_handler import DataHandler
-from data_storage.storage_backend import HybridStorageManager
+from backtest_data_module.data_handler import DataHandler
+from backtest_data_module.data_storage.storage_backend import HybridStorageManager
 
 
 class TestDataHandler(unittest.TestCase):

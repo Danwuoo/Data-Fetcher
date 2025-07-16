@@ -5,8 +5,8 @@ from pathlib import Path
 import pandas as pd
 import sys
 sys.path.append('.')
-from data_processing.pipeline import Pipeline
-from zxq.pipeline.pipeline_step import PipelineStep
+from backtest_data_module.data_processing.pipeline import Pipeline
+from backtest_data_module.zxq.pipeline.pipeline_step import PipelineStep
 
 
 class MockStep(PipelineStep):

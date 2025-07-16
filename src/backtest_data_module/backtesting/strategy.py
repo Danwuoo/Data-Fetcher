@@ -1,13 +1,24 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Union
 
-from backtesting.execution import Order
-from backtesting.events import MarketData
+import numpy as np
+import polars as pl
+
+from backtest_data_module.backtesting.events import Event, SignalEvent
 
 
-class Strategy(ABC):
+class StrategyBase(ABC):
+    def __init__(self, params: dict):
+        self.params = params
+
     @abstractmethod
-    def on_data(self, event: MarketData) -> List[Order]:
+    def on_data(self, event: Union[np.ndarray, pl.DataFrame]) -> List[SignalEvent]:
+        pass
+
+    def on_start(self, context):
+        pass
+
+    def on_finish(self, context):
         pass

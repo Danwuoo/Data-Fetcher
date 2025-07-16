@@ -1,19 +1,30 @@
 import unittest
-import pandas as pd
 
-from backtesting.strategies.sma_crossover import SmaCrossover
-from backtesting.events import MarketData
+import polars as pl
+
+from backtest_data_module.backtesting.strategies.sma_crossover import SmaCrossover
+from backtest_data_module.backtesting.events import MarketEvent
 
 
 class TestStrategy(unittest.TestCase):
     def test_sma_crossover(self):
-        strategy = SmaCrossover(short_window=2, long_window=4)
-        prices = [100, 101, 102, 103, 104, 103, 102, 101, 100]
-        orders = []
-        for price in prices:
-            event = MarketData(data={"AAPL": {"close": price}})
-            orders.extend(strategy.on_data(event))
+        strategy = SmaCrossover(params={"short_window": 2, "long_window": 5})
+        data = pl.DataFrame(
+            {
+                "asset": ["AAPL"] * 10,
+                "close": [100, 101, 102, 103, 104, 105, 106, 107, 108, 109],
+                "timestamp": range(10),
+            }
+        )
 
-        self.assertEqual(len(orders), 2)
-        self.assertEqual(orders[0].quantity, 1)
-        self.assertEqual(orders[1].quantity, -1)
+        signals = []
+        for row in data.iter_rows(named=True):
+            event = MarketEvent(data={"AAPL": row})
+            signals.extend(strategy.on_data(event))
+
+        self.assertEqual(len(signals), 5)
+        self.assertEqual(signals[0].direction, "long")
+
+
+if __name__ == "__main__":
+    unittest.main()

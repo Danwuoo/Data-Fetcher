@@ -1,5 +1,5 @@
 import pandas as pd
-from data_storage import HybridStorageManager
+from backtest_data_module.data_storage import HybridStorageManager
 
 
 def test_access_counts_and_stats():

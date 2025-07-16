@@ -1,6 +1,6 @@
 import asyncio
 import pytest
-from data_ingestion.py.caching import LRUCache
+from backtest_data_module.data_ingestion.py.caching import LRUCache
 
 
 @pytest.mark.asyncio

@@ -1,12 +1,12 @@
 import unittest
 import pandas as pd
-from backtesting.orchestrator import Orchestrator
-from backtesting.strategies.sma_crossover import SmaCrossover
-from backtesting.portfolio import Portfolio
-from backtesting.execution import Execution
-from backtesting.performance import Performance
-from data_processing.data_handler import DataHandler
-from data_storage.storage_backend import HybridStorageManager
+from backtest_data_module.backtesting.orchestrator import Orchestrator
+from backtest_data_module.backtesting.strategies.sma_crossover import SmaCrossover
+from backtest_data_module.backtesting.portfolio import Portfolio
+from backtest_data_module.backtesting.execution import Execution
+from backtest_data_module.backtesting.performance import Performance
+from backtest_data_module.data_handler import DataHandler
+from backtest_data_module.data_storage.storage_backend import HybridStorageManager
 
 
 class TestOrchestrator(unittest.TestCase):

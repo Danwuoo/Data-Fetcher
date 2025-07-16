@@ -2,8 +2,8 @@ import time
 import httpx
 import pytest
 
-from data_ingestion.py.middleware import RateLimitMiddleware
-from data_ingestion.py.rate_limiter import RateLimiter
+from backtest_data_module.data_ingestion.py.middleware import RateLimitMiddleware
+from backtest_data_module.data_ingestion.py.rate_limiter import RateLimiter
 
 
 @pytest.mark.asyncio

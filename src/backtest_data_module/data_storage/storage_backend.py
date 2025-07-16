@@ -16,7 +16,7 @@ import psycopg
 import boto3
 import io
 
-from .catalog import Catalog, CatalogEntry
+from backtest_data_module.data_storage.catalog import Catalog, CatalogEntry
 from backtest_data_module.metrics import (
     STORAGE_WRITE_COUNTER,
     STORAGE_READ_COUNTER,

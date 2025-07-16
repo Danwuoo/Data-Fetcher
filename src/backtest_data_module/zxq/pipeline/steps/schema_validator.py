@@ -3,8 +3,8 @@ from __future__ import annotations
 import pandas as pd
 from pandera.errors import SchemaError
 
-from zxq.pipeline.pipeline_step import PipelineStep
-from metrics import SCHEMA_VALIDATION_FAIL_COUNTER
+from backtest_data_module.zxq.pipeline.pipeline_step import PipelineStep
+from backtest_data_module.metrics import SCHEMA_VALIDATION_FAIL_COUNTER
 
 
 class SchemaValidatorStep(PipelineStep):

@@ -39,7 +39,7 @@ return {allowed, tokens, wait}
 
 
 class RedisRateLimiter:
-    """\u5229\u7528 Redis \u7db2\u8def\u5171\u7528 token bucket \u8a18\u9304."""
+    """利用 Redis 網路共用 token bucket 紀錄。"""
 
     def __init__(
         self,
@@ -95,7 +95,7 @@ class RedisRateLimiter:
 
     @property
     def remaining_tokens(self) -> float:
-        return self._tokens
+        return self.tokens
 
 
 __all__ = ["RedisRateLimiter"]

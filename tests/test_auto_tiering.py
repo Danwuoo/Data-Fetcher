@@ -1,5 +1,5 @@
 import pandas as pd
-from data_storage import HybridStorageManager, Catalog
+from backtest_data_module.data_storage import HybridStorageManager, Catalog
 
 
 def test_auto_migration_hot_to_warm_and_cold():

@@ -1,5 +1,5 @@
 import pandas as pd
-from data_storage import HybridStorageManager, Catalog
+from backtest_data_module.data_storage import HybridStorageManager, Catalog
 from utils.notify import SlackNotifier, PagerDutyNotifier
 
 

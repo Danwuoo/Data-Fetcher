@@ -4,7 +4,7 @@ from typing import List, Type
 
 import yaml
 
-from zxq.pipeline.pipeline_step import PipelineStep
+from backtest_data_module.zxq.pipeline.pipeline_step import PipelineStep
 
 
 def load_steps_from_yaml(path: str) -> List[Type[PipelineStep]]:

@@ -1,6 +1,6 @@
 import pandas as pd
 import pandera as pa
-from zxq.pipeline.pipeline_step import PipelineStep
+from backtest_data_module.zxq.pipeline.pipeline_step import PipelineStep
 
 
 class TimeAligner(PipelineStep):

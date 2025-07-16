@@ -5,8 +5,8 @@ from __future__ import annotations
 import pandas as pd
 from kafka import KafkaConsumer
 
-from data_processing.pipeline import Pipeline
-from data_storage.storage_backend import HybridStorageManager
+from backtest_data_module.data_processing.pipeline import Pipeline
+from backtest_data_module.data_storage.storage_backend import HybridStorageManager
 
 
 class IncrementalRunner:

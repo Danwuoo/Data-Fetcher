@@ -2,14 +2,12 @@ from __future__ import annotations
 
 import random
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from collections import deque
+from typing import List, Dict, Any, Tuple
 
+import numpy as np
 
-class Order:
-    def __init__(self, asset: str, quantity: float, order_type: str = "market"):
-        self.asset = asset
-        self.quantity = quantity
-        self.order_type = order_type
+from backtest_data_module.backtesting.events import OrderEvent, FillEvent
 
 
 class CommissionModel(ABC):
@@ -28,7 +26,7 @@ class FlatCommission(CommissionModel):
 
 class SlippageModel(ABC):
     @abstractmethod
-    def apply(self, price: float) -> float:
+    def apply(self, price: float, quantity: float) -> float:
         pass
 
 
@@ -37,8 +35,24 @@ class GaussianSlippage(SlippageModel):
         self.mu = mu
         self.sigma = sigma
 
-    def apply(self, price: float) -> float:
-        return price * (1 + random.gauss(self.mu, self.sigma))
+    def apply(self, price: float, quantity: float) -> float:
+        # Simulate slippage based on a normal distribution
+        # A more advanced model could also consider the order size (quantity)
+        return price * (1 + np.random.normal(self.mu, self.sigma))
+
+
+class LatencyModel(ABC):
+    @abstractmethod
+    def get_delay(self) -> float:
+        pass
+
+
+class PoissonLatency(LatencyModel):
+    def __init__(self, lam: float = 0.01):  # Average delay of 10ms
+        self.lam = lam
+
+    def get_delay(self) -> float:
+        return np.random.poisson(self.lam)
 
 
 class Execution:
@@ -46,20 +60,38 @@ class Execution:
         self,
         commission_model: CommissionModel = FlatCommission(),
         slippage_model: SlippageModel = GaussianSlippage(),
+        latency_model: LatencyModel = PoissonLatency(),
     ):
         self.commission_model = commission_model
         self.slippage_model = slippage_model
+        self.latency_model = latency_model
+        self.order_queue = deque()
+
+    def place_order(self, order: OrderEvent, timestamp: float):
+        delay = self.latency_model.get_delay()
+        execution_time = timestamp + delay
+        self.order_queue.append((order, execution_time))
 
     def process_orders(
-        self, orders: List[Order], price_data: Dict[str, float]
-    ) -> List[Dict[str, Any]]:
+        self, current_time: float, price_data: Dict[str, float]
+    ) -> List[FillEvent]:
         fills = []
-        for order in orders:
+
+        # Sort orders by execution time to maintain FIFO
+        self.order_queue = deque(sorted(self.order_queue, key=lambda x: x[1]))
+
+        while self.order_queue and self.order_queue[0][1] <= current_time:
+            order, execution_time = self.order_queue.popleft()
+
+            if order.asset not in price_data:
+                # Handle cases where price data is not available for the asset
+                # For now, we'll just skip the order
+                continue
+
             price = price_data[order.asset]
-            slipped_price = self.slippage_model.apply(price)
-            commission = self.commission_model.calculate(
-                order.quantity, slipped_price
-            )
+            slipped_price = self.slippage_model.apply(price, order.quantity)
+            commission = self.commission_model.calculate(order.quantity, slipped_price)
+
             fills.append(
                 {
                     "asset": order.asset,

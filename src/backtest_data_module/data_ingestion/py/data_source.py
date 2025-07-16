@@ -1,7 +1,7 @@
-from data_ingestion.py.api_client import ApiClient
-from data_ingestion.py.rate_limiter import RateLimiter
-from data_ingestion.py.caching import ICache
-from data_ingestion.metrics import (
+from backtest_data_module.data_ingestion.py.api_client import ApiClient
+from backtest_data_module.data_ingestion.py.rate_limiter import RateLimiter
+from backtest_data_module.data_ingestion.py.caching import ICache
+from backtest_data_module.data_ingestion.metrics import (
     CACHE_HIT_COUNTER,
     CACHE_MISS_COUNTER,
     CACHE_HIT_RATIO,
