@@ -1,13 +1,17 @@
 from __future__ import annotations
 
-from typing import AsyncIterator, List
+from typing import AsyncIterator
 
 import polars as pl
 import pyarrow as pa
 import pyarrow.parquet as pq
-import cupy as cp
+try:
+    import cupy as cp
+    from cupy.cuda import runtime as cuda_runtime
+except Exception:  # noqa: BLE001
+    cp = None
+    cuda_runtime = None
 import io
-from cupy.cuda import runtime as cuda_runtime
 
 from backtest_data_module.data_storage.storage_backend import HybridStorageManager
 
@@ -17,8 +21,13 @@ class DataHandler:
         self.storage_manager = storage_manager
 
     def read(
-        self, query: str, tiers: list[str] = ["hot", "warm", "cold"], compressed_cols: list[str] | None = None
+        self,
+        query: str,
+        tiers: list[str] | None = None,
+        compressed_cols: list[str] | None = None,
     ) -> pl.DataFrame | pa.Table:
+        if tiers is None:
+            tiers = ["hot", "warm", "cold"]
         for tier in tiers:
             try:
                 df = self.storage_manager.read(query, tiers=[tier])
@@ -32,14 +41,16 @@ class DataHandler:
         raise KeyError(f"Table {query} not found in any of the specified tiers.")
 
     def compress(self, df: pl.DataFrame, cols: list[str]) -> pa.Table:
-        """Compresses specified columns of a DataFrame using dictionary and bit-packing."""
+        """Compress specified columns using dictionary and bit-packing."""
         table = df.to_arrow()
         for col in cols:
             table = table.column(col).dictionary_encode()
         return table
 
-    def decompress(self, table: pa.Table, cols: list[str]) -> cp.ndarray:
+    def decompress(self, table: pa.Table, cols: list[str]):
         """Decompresses specified columns of a DataFrame on the GPU."""
+        if cp is None:
+            raise RuntimeError("cupy 未安裝，無法在 GPU 上解壓縮")
         with io.BytesIO() as buf:
             pq.write_table(table, buf)
             buf.seek(0)
@@ -47,13 +58,15 @@ class DataHandler:
             gpu_table = dataset.read_pandas().to_cupy()
         return gpu_table
 
-    def quantize(self, df: cp.ndarray, bits: int = 8) -> cp.ndarray:
+    def quantize(self, df, bits: int = 8):
         """Quantizes a CuPy array to a lower precision."""
+        if cp is None:
+            raise RuntimeError("cupy 未安裝，無法量化資料")
         if bits not in [8, 16, 32]:
             raise ValueError("Only 8, 16, and 32-bit quantization is supported.")
 
         # For simplicity, we'll just cast the array to the desired type.
-        # In a real implementation, you would use a more sophisticated quantization algorithm.
+        # In a real implementation, use a more sophisticated quantization algorithm.
         if bits == 8:
             return df.astype(cp.int8)
         elif bits == 16:
@@ -98,6 +111,14 @@ class DataHandler:
             expected_columns = ["symbol", "price", "timestamp"]
             return all(col in df.columns for col in expected_columns)
         elif expectation_suite_name == "bar_schema":
-            expected_columns = ["symbol", "open", "high", "low", "close", "volume", "timestamp"]
+            expected_columns = [
+                "symbol",
+                "open",
+                "high",
+                "low",
+                "close",
+                "volume",
+                "timestamp",
+            ]
             return all(col in df.columns for col in expected_columns)
         return False
