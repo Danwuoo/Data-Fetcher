@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+import os
 from typing import Dict, List, Type
 
+import httpx
 import pandas as pd
 import polars as pl
 import ray
@@ -69,6 +71,7 @@ class Orchestrator:
         portfolio_cls: Type[Portfolio],
         execution_cls: Type[Execution],
         performance_cls: Type[Performance],
+        register_api: str = None,
     ):
         self.data_handler = data_handler
         self.strategy_cls = strategy_cls
@@ -79,6 +82,39 @@ class Orchestrator:
         self.run_id = None
         self.strategy_name = None
         self.hyperparams = None
+        self.register_api = register_api
+        self.api_client = httpx.Client(
+            base_url=self.register_api,
+            headers={"X-API-KEY": os.environ.get("STRATEGY_MANAGER_API_KEY")},
+        )
+
+    def _create_run(self, orchestrator_type: str):
+        if not self.register_api:
+            return
+        response = self.api_client.post(
+            "/runs",
+            json={
+                "strategy_name": self.strategy_name,
+                "strategy_version": "0.1.0",  # Replace with actual versioning
+                "hyperparameters": self.hyperparams,
+                "orchestrator_type": orchestrator_type,
+            },
+        )
+        response.raise_for_status()
+        self.run_id = response.json()["run_id"]
+
+    def _update_run_status(self, status: str, metrics_uri: str = None, error_message: str = None):
+        if not self.register_api or not self.run_id:
+            return
+
+        json_payload = {"status": status}
+        if metrics_uri:
+            json_payload["metrics_uri"] = metrics_uri
+        if error_message:
+            json_payload["error_message"] = error_message
+
+        response = self.api_client.put(f"/runs/{self.run_id}", json=json_payload)
+        response.raise_for_status()
 
     def _get_slices(self, config: dict, data: pd.DataFrame):
         if "walk_forward" in config:
@@ -104,77 +140,94 @@ class Orchestrator:
             raise ValueError("No valid configuration found for walk_forward or cpcv")
 
     def run(self, config: dict, data: pd.DataFrame) -> List[dict]:
-        self.run_id = config.get("run_id")
         self.strategy_name = self.strategy_cls.__name__
         self.hyperparams = config.get("strategy_params", {})
-        results = []
+        self._create_run("walk_forward" if "walk_forward" in config else "cpcv")
+        self._update_run_status("RUNNING")
 
-        slices = self._get_slices(config, data)
+        try:
+            results = []
+            slices = self._get_slices(config, data)
 
-        for i, (train_indices, test_indices) in enumerate(slices):
-            train_data = data.iloc[train_indices]
-            test_data = data.iloc[test_indices]
+            for i, (train_indices, test_indices) in enumerate(slices):
+                train_data = data.iloc[train_indices]
+                test_data = data.iloc[test_indices]
 
-            strategy = self.strategy_cls(**self.hyperparams)
-            portfolio = self.portfolio_cls(**config.get("portfolio_params", {}))
-            execution = self.execution_cls(**config.get("execution_params", {}))
-            performance = self.performance_cls()
+                strategy = self.strategy_cls(**self.hyperparams)
+                portfolio = self.portfolio_cls(**config.get("portfolio_params", {}))
+                execution = self.execution_cls(**config.get("execution_params", {}))
+                performance = self.performance_cls()
 
-            backtest = Backtest(
-                strategy,
-                portfolio,
-                execution,
-                performance,
-                pl.from_pandas(test_data.reset_index()),
-            )
-            backtest.run()
+                backtest = Backtest(
+                    strategy,
+                    portfolio,
+                    execution,
+                    performance,
+                    pl.from_pandas(test_data.reset_index()),
+                )
+                backtest.run()
 
-            slice_results = {
-                "slice_id": i,
-                "train_start": train_data.index.min(),
-                "train_end": train_data.index.max(),
-                "test_start": test_data.index.min(),
-                "test_end": test_data.index.max(),
-                "metrics": backtest.results["performance"].metrics,
-            }
-            results.append(slice_results)
+                slice_results = {
+                    "slice_id": i,
+                    "train_start": train_data.index.min(),
+                    "train_end": train_data.index.max(),
+                    "test_start": test_data.index.min(),
+                    "test_end": test_data.index.max(),
+                    "metrics": backtest.results["performance"].metrics,
+                }
+                results.append(slice_results)
 
-        self.results = {"run_id": self.run_id, "slices": results}
-        return results
+            self.results = {"run_id": self.run_id, "slices": results}
+            metrics_uri = f"metrics/{self.run_id}_summary.json"
+            self.to_json(metrics_uri)
+            self._update_run_status("COMPLETED", metrics_uri=metrics_uri)
+            return results
+        except Exception as e:
+            self._update_run_status("FAILED", error_message=str(e))
+            raise
 
     def run_ray(self, config: dict, data: pd.DataFrame) -> List[dict]:
-        self.run_id = config.get("run_id")
         self.strategy_name = self.strategy_cls.__name__
         self.hyperparams = config.get("strategy_params", {})
+        self._create_run("walk_forward" if "walk_forward" in config else "cpcv")
+        self._update_run_status("RUNNING")
 
-        ray.init(ignore_reinit_error=True)
+        try:
+            ray.init(ignore_reinit_error=True)
 
-        results_refs = []
-        slices = self._get_slices(config, data)
+            results_refs = []
+            slices = self._get_slices(config, data)
 
-        for i, (train_indices, test_indices) in enumerate(slices):
-            train_data = data.iloc[train_indices]
-            test_data = data.iloc[test_indices]
+            for i, (train_indices, test_indices) in enumerate(slices):
+                train_data = data.iloc[train_indices]
+                test_data = data.iloc[test_indices]
 
-            results_refs.append(
-                run_backtest_slice.remote(
-                    self.strategy_cls,
-                    self.portfolio_cls,
-                    self.execution_cls,
-                    self.performance_cls,
-                    self.hyperparams,
-                    config.get("portfolio_params", {}),
-                    config.get("execution_params", {}),
-                    train_data,
-                    test_data,
-                    i,
+                results_refs.append(
+                    run_backtest_slice.remote(
+                        self.strategy_cls,
+                        self.portfolio_cls,
+                        self.execution_cls,
+                        self.performance_cls,
+                        self.hyperparams,
+                        config.get("portfolio_params", {}),
+                        config.get("execution_params", {}),
+                        train_data,
+                        test_data,
+                        i,
+                    )
                 )
-            )
 
-        results = ray.get(results_refs)
-        self.results = {"run_id": self.run_id, "slices": results}
-        ray.shutdown()
-        return results
+            results = ray.get(results_refs)
+            self.results = {"run_id": self.run_id, "slices": results}
+            metrics_uri = f"metrics/{self.run_id}_summary.json"
+            self.to_json(metrics_uri)
+            self._update_run_status("COMPLETED", metrics_uri=metrics_uri)
+            ray.shutdown()
+            return results
+        except Exception as e:
+            self._update_run_status("FAILED", error_message=str(e))
+            ray.shutdown()
+            raise
 
     def to_json(self, filepath: str):
         with open(filepath, "w") as f:

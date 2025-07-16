@@ -9,6 +9,7 @@ nav:
   - API:
       - Data Storage: reference/data_storage.md
       - Data Ingestion: reference/data_ingestion.md
+      - Strategy Manager: strategy_manager.md
 plugins:
   - search
   - mkdocstrings
