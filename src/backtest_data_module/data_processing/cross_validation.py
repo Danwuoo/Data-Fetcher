@@ -1,38 +1,76 @@
 from __future__ import annotations
 
+import json
 from itertools import combinations
-from typing import Iterator
+from typing import Any, Callable, Dict, Iterator, List
 
+import numpy as np
+import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 from sklearn.model_selection import KFold
+
+from backtest_data_module.backtesting.performance import PerformanceSummary
+
+
+class CPCVResult:
+    def __init__(self, results: List[PerformanceSummary]):
+        self.results = results
+
+    def to_parquet(self, path: str):
+        df = self.to_dataframe()
+        table = pa.Table.from_pandas(df)
+        pq.write_table(table, path)
+
+    def to_json(self) -> str:
+        return json.dumps([r.metrics for r in self.results])
+
+    def to_arrow(self) -> pa.Table:
+        return pa.Table.from_pandas(self.to_dataframe())
+
+    def to_dataframe(self) -> pd.DataFrame:
+        return pd.DataFrame([r.metrics for r in self.results])
+
+    def aggregate_stats(self) -> Dict[str, Dict[str, float]]:
+        df = self.to_dataframe()
+        return {
+            metric: {
+                "mean": df[metric].mean(),
+                "std": df[metric].std(),
+                "min": df[metric].min(),
+                "max": df[metric].max(),
+            }
+            for metric in df.columns
+        }
 
 
 def purged_k_fold(
     n_splits: int, n_samples: int, embargo: int
 ) -> Iterator[tuple[list[int], list[int]]]:
     """
-    Purged K-Fold Cross-Validation。
+    Purged K-Fold Cross-Validation?
 
     Args:
         n_splits: The number of folds.
         n_samples: The number of samples.
-        embargo: 在測試區段前後需排除的樣本數。
+        embargo: ????????????????
 
     Yields:
         The train and test indices for each fold.
     """
     kf = KFold(n_splits=n_splits)
     for train_index, test_index in kf.split(range(n_samples)):
-        # 測試集範圍
+        # ??????
         test_start = test_index[0]
         test_end = test_index[-1]
 
-        # 前後禁入範圍計算
+        # ??????????
         before_start = max(0, test_start - embargo)
         before_end = test_start - 1
         after_start = test_end + 1
         after_end = min(n_samples - 1, test_end + embargo)
 
-        # 建立需排除的索引集合
+        # ????????????
         embargo_indices: set[int] = (
             set(range(before_start, before_end + 1))
             | set(range(after_start, after_end + 1))
@@ -49,19 +87,19 @@ def combinatorial_purged_cv(
     embargo: int,
 ) -> Iterator[tuple[list[int], list[int]]]:
     """
-    組合式 Purged Cross-Validation。
+    ??? Purged Cross-Validation?
 
     Args:
-        n_splits: 將資料切成的區塊數。
-        n_samples: 總樣本數。
-        n_test_splits: 每次測試所使用的區塊數。
-        embargo: 在測試區段前後需排除的樣本數。
+        n_splits: ?????????
+        n_samples: ?????
+        n_test_splits: ????????????
+        embargo: ????????????????
 
     Yields:
-        每次迭代返回訓練集與測試集索引。
+        ??????????????????
     """
     if n_test_splits <= 0 or n_test_splits >= n_splits:
-        raise ValueError("n_test_splits 必須介於 1 與 n_splits-1 之間")
+        raise ValueError("n_test_splits ????? 1 ? n_splits-1 ????")
 
     fold_size = n_samples // n_splits
     indices = list(range(n_samples))
@@ -92,19 +130,44 @@ def walk_forward_split(
     n_samples: int, train_size: int, test_size: int, step_size: int
 ) -> Iterator[tuple[list[int], list[int]]]:
     """
-    Walk-Forward 時間序列切分。
+    Walk-Forward ???????
 
     Args:
-        n_samples: 總樣本數。
-        train_size: 每次訓練集的大小。
-        test_size: 每次測試集的大小。
-        step_size: 每次向前移動的步長。
+        n_samples: ?????
+        train_size: ????????
+        test_size: ????????
+        step_size: ?????????
 
     Yields:
-        每次迭代返回訓練集與測試集索引。
+        ??????????????????
     """
     end = n_samples - train_size - test_size
     for start in range(0, end + 1, step_size):
         train_indices = list(range(start, start + train_size))
         test_indices = list(range(start + train_size, start + train_size + test_size))
         yield train_indices, test_indices
+
+
+def run_cpcv(
+    data: pd.DataFrame,
+    strategy_func: Callable[[pd.DataFrame], pd.Series],
+    n_splits: int,
+    n_test_splits: int,
+    embargo_pct: float,
+) -> CPCVResult:
+    n_samples = len(data)
+    embargo = int(n_samples * embargo_pct)
+    results = []
+
+    for train_indices, test_indices in combinatorial_purged_cv(
+        n_splits, n_samples, n_test_splits, embargo
+    ):
+        train_data = data.iloc[train_indices]
+        test_data = data.iloc[test_indices]
+
+        nav_series = strategy_func(train_data, test_data)
+
+        # performance = Performance(nav_series=nav_series.tolist())
+        # results.append(performance.compute_metrics())
+
+    return CPCVResult(results)
