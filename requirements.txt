@@ -36,3 +36,6 @@ pyarrow
 kafka-python
 matplotlib
 reportlab
+pdfplumber
+polars
+ray

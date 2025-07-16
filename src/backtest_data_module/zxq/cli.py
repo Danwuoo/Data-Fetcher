@@ -1,6 +1,7 @@
 import shutil
 import sys
 from pathlib import Path
+from typing import Type
 
 import pandas as pd
 import typer
@@ -23,6 +24,8 @@ from backtest_data_module.data_storage import (
     CatalogEntry,
     HybridStorageManager,
 )
+from backtest_data_module.reporting.report import ReportGen
+import json
 
 SNAPSHOT_DIR = Path("snapshots")
 RESTORE_DIR = Path("restored")
@@ -201,6 +204,41 @@ def run_cpcv(
 ):
     """Run a Combinatorial Purged Cross-Validation."""
     _run_orchestrator(config_path, use_ray)
+
+
+report_app = typer.Typer(help="Report generation commands")
+app.add_typer(report_app, name="report")
+
+
+@report_app.command("generate")
+def generate_report(
+    run_id: str = typer.Option(..., "--run-id", help="Run ID of the backtest"),
+    fmt: str = typer.Option("pdf", "--fmt", help="Output format (pdf, json)"),
+):
+    """Generate a report for a given run ID."""
+    results_path = Path(f"{run_id}_results.json")
+    if not results_path.exists():
+        typer.echo(f"Results file for run ID '{run_id}' not found.")
+        raise typer.Exit(code=1)
+
+    with open(results_path) as f:
+        results = json.load(f)
+
+    report_gen = ReportGen(run_id, results)
+
+    if fmt == "pdf":
+        output_file = Path(f"report_{run_id}.pdf")
+        report_gen.generate_pdf(output_file)
+        typer.echo(f"PDF report generated at {output_file}")
+    elif fmt == "json":
+        output_file = Path(f"report_{run_id}.json")
+        json_output = report_gen.generate_json()
+        with open(output_file, "w") as f:
+            f.write(json_output)
+        typer.echo(f"JSON report generated at {output_file}")
+    else:
+        typer.echo(f"Unknown format: {fmt}")
+        raise typer.Exit(code=1)
 
 
 if __name__ == "__main__":

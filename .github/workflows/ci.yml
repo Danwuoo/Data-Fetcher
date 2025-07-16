@@ -35,6 +35,10 @@ jobs:
         run: mypy --strict src/
       - name: 執行 pytest
         run: pytest --cov
+      - name: 執行 reporting tests
+        run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/src
+          python -m unittest tests/reporting/test_report.py
       - name: 驗證 Great Expectations Schemas
         run: great_expectations suite list
       - name: 執行驗證 notebook
