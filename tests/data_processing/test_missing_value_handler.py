@@ -1,6 +1,8 @@
 import unittest
 import pandas as pd
 import numpy as np
+import sys
+sys.path.append('.')
 from zxq.pipeline.steps.missing_value_handler import MissingValueHandler
 from zxq.pipeline.steps.schema_validator import SchemaValidatorStep
 

@@ -1,4 +1,6 @@
 import unittest
+import sys
+sys.path.append('.')
 from data_processing.cross_validation import purged_k_fold
 
 

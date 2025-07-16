@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from typing import List, Dict
 
+import numpy as np
 import pandas as pd
 
 from backtesting.events import MarketData
@@ -43,6 +44,12 @@ class Backtest:
                     p.market_value(row["close"]) for p in self.portfolio.positions.values()
                 )
             )
+
+        self.performance.returns = (
+            np.diff(self.performance.nav_series) / self.performance.nav_series[:-1]
+            if self.performance.nav_series and len(self.performance.nav_series) > 1
+            else np.array([])
+        )
 
         self.results = {
             "pnl": self.portfolio.get_pnl(

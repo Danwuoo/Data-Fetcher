@@ -3,6 +3,8 @@ import time
 import tempfile
 from pathlib import Path
 import pandas as pd
+import sys
+sys.path.append('.')
 from data_processing.pipeline import Pipeline
 from zxq.pipeline.pipeline_step import PipelineStep
 
