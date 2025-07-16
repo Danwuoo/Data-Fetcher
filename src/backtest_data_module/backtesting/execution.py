@@ -32,14 +32,15 @@ class SlippageModel(ABC):
 
 
 class GaussianSlippage(SlippageModel):
-    def __init__(self, mu: float = 0, sigma: float = 0.001):
+    def __init__(self, mu: float = 0, sigma: float = 0.001, seed: int = None):
         self.mu = mu
         self.sigma = sigma
+        self.rng = np.random.default_rng(seed)
 
     def apply(self, price: float, quantity: float) -> float:
         # Simulate slippage based on a normal distribution
         # A more advanced model could also consider the order size (quantity)
-        return price * (1 + np.random.normal(self.mu, self.sigma))
+        return price["close"] * (1 + self.rng.normal(self.mu, self.sigma))
 
 
 class LatencyModel(ABC):
@@ -60,7 +61,7 @@ class Execution:
     def __init__(
         self,
         commission_model: CommissionModel = FlatCommission(),
-        slippage_model: SlippageModel = GaussianSlippage(),
+        slippage_model: SlippageModel = GaussianSlippage(seed=42),
         latency_model: LatencyModel = PoissonLatency(),
     ):
         self.commission_model = commission_model
