@@ -10,10 +10,10 @@ from backtest_data_module.backtesting.strategy import StrategyBase
 
 
 class SmaCrossover(StrategyBase):
-    def __init__(self, params: dict):
-        super().__init__(params)
-        self.short_window = params.get("short_window", 10)
-        self.long_window = params.get("long_window", 30)
+    def __init__(self, short_window: int = 10, long_window: int = 30):
+        super().__init__({})
+        self.short_window = short_window
+        self.long_window = long_window
         self.prices = {}
 
     def on_data(self, event: Union[np.ndarray, pl.DataFrame]) -> List[SignalEvent]:

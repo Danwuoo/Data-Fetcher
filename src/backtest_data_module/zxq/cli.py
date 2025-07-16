@@ -1,17 +1,35 @@
-import typer
-from pathlib import Path
-import sys
-sys.path.append('.')
-from backtest_data_module.data_processing.cross_validation import walk_forward_split
-from backtest_data_module.data_storage import Catalog, CatalogEntry, HybridStorageManager
 import shutil
+import sys
+from pathlib import Path
+
+import pandas as pd
+import typer
+import yaml
+
+sys.path.append(".")
+from backtest_data_module.backtesting.execution import (
+    Execution,
+    FlatCommission,
+    GaussianSlippage,
+)
+from backtest_data_module.backtesting.orchestrator import Orchestrator
+from backtest_data_module.backtesting.performance import Performance
+from backtest_data_module.backtesting.portfolio import Portfolio
+from backtest_data_module.backtesting.strategy import StrategyBase
+from backtest_data_module.data_handler import DataHandler
+from backtest_data_module.data_processing.cross_validation import walk_forward_split
+from backtest_data_module.data_storage import (
+    Catalog,
+    CatalogEntry,
+    HybridStorageManager,
+)
 
 SNAPSHOT_DIR = Path("snapshots")
 RESTORE_DIR = Path("restored")
 
 
 def restore_snapshot(snapshot: Path) -> None:
-    """還原指定快照檔案。"""
+    """Restore the specified snapshot file."""
     if not snapshot.exists():
         raise FileNotFoundError(snapshot)
     RESTORE_DIR.mkdir(exist_ok=True)
@@ -19,44 +37,47 @@ def restore_snapshot(snapshot: Path) -> None:
 
 
 def verify_latest() -> None:
-    """尋找並還原最新的快照。"""
+    """Find and restore the latest snapshot."""
     snapshots = sorted(
         SNAPSHOT_DIR.glob("*.zip"),
         key=lambda p: p.stat().st_mtime,
         reverse=True,
     )
     if not snapshots:
-        typer.echo("找不到任何快照")
+        typer.echo("No snapshots found")
         return
     latest = snapshots[0]
-    typer.echo(f"還原 {latest.name}...")
+    typer.echo(f"Restoring {latest.name}...")
     restore_snapshot(latest)
-    typer.echo("還原完成")
+    typer.echo("Restore complete")
 
 
-app = typer.Typer(help="ZXQuant CLI 工具")
+app = typer.Typer(help="ZXQuant CLI tool")
 
-audit_app = typer.Typer(help="稽核相關指令")
+audit_app = typer.Typer(help="Audit related commands")
 app.add_typer(audit_app, name="audit")
 
-storage_app = typer.Typer(help="儲存相關指令")
+storage_app = typer.Typer(help="Storage related commands")
 app.add_typer(storage_app, name="storage")
 
-backup_app = typer.Typer(help="備份還原指令")
+backup_app = typer.Typer(help="Backup and restore commands")
 app.add_typer(backup_app, name="backup")
+
+orchestrator_app = typer.Typer(help="Orchestrator commands")
+app.add_typer(orchestrator_app, name="orchestrator")
 
 
 @audit_app.command()
 def trace(table: str, db: str = ":memory:") -> None:
-    """從 Catalog 讀取表格所在層級與位置。"""
+    """Read the tier and location of the table from the Catalog."""
     catalog = Catalog(db_path=db)
     entry: CatalogEntry | None = catalog.get(table)
     if not entry:
-        typer.echo(f"找不到表格 {table}")
+        typer.echo(f"Table {table} not found")
         raise typer.Exit(code=1)
 
     msg = (
-        f"表格 {entry.table_name} 位於 {entry.tier} (位置: {entry.location})\n"
+        f"Table {entry.table_name} is at {entry.tier} (location: {entry.location})\n"
         f"Schema: {entry.schema_hash}"
     )
     typer.echo(msg)
@@ -69,7 +90,7 @@ def walk_forward(
     test_size: int,
     step_size: int,
 ) -> None:
-    """Walk-Forward 資料切分。"""
+    """Walk-Forward data splitting."""
     for train_idx, test_idx in walk_forward_split(
         samples, train_size, test_size, step_size
     ):
@@ -78,31 +99,108 @@ def walk_forward(
 
 @storage_app.command()
 def migrate(
-    table: str = typer.Option(..., "--table", help="要移動的資料表"),
-    to: str = typer.Option(..., "--to", help="目標層級"),
-    db: str = typer.Option(":memory:", "--db", help="Catalog 位置"),
-    dry_run: bool = typer.Option(False, "--dry-run", help="僅顯示預計行動"),
+    table: str = typer.Option(..., "--table", help="Table to move"),
+    to: str = typer.Option(..., "--to", help="Target tier"),
+    db: str = typer.Option(":memory:", "--db", help="Catalog location"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show expected action only"),
 ) -> None:
-    """移動資料表至指定層級。"""
+    """Move a table to the specified tier."""
     manager = HybridStorageManager(catalog=Catalog(db_path=db))
     entry = manager.catalog.get(table)
     if entry is None:
-        typer.echo(f"找不到資料表 {table}")
+        typer.echo(f"Table {table} not found")
         raise typer.Exit(code=1)
     if dry_run:
-        typer.echo(f"預計將 {table} 從 {entry.tier} 移至 {to}")
+        typer.echo(f"Will move {table} from {entry.tier} to {to}")
     else:
         manager.migrate(table, entry.tier, to)
-        typer.echo(f"已將 {table} 從 {entry.tier} 移至 {to}")
+        typer.echo(f"Moved {table} from {entry.tier} to {to}")
 
 
 @backup_app.command()
 def verify(latest: bool = False) -> None:
-    """驗證或還原備份。"""
+    """Verify or restore a backup."""
     if latest:
         verify_latest()
     else:
-        typer.echo("請使用 --latest 參數")
+        typer.echo("Please use the --latest parameter")
+
+
+def _get_strategy_cls(strategy_name: str) -> Type[StrategyBase]:
+    # This is a simple way to get the strategy class.
+    # In a real application, you would have a more robust mechanism
+    # for discovering and loading strategies.
+    if strategy_name == "SmaCrossover":
+        from backtest_data_module.backtesting.strategies.sma_crossover import (
+            SmaCrossover,
+        )
+
+        return SmaCrossover
+    else:
+        raise ValueError(f"Unknown strategy: {strategy_name}")
+
+
+def _run_orchestrator(config_path: Path, use_ray: bool):
+    with open(config_path) as f:
+        config = yaml.safe_load(f)
+
+    # This is a sample dataframe. In a real application, you would load
+    # data from the DataHandler.
+    data = pd.DataFrame(
+        {
+            "asset": ["AAPL"] * 1000,
+            "close": [100 + i + (i % 5) * 5 for i in range(1000)],
+        }
+    )
+    data["date"] = pd.to_datetime(pd.date_range(start="2020-01-01", periods=1000))
+    data = data.set_index("date")
+
+    storage_manager = HybridStorageManager({})
+    data_handler = DataHandler(storage_manager)
+    strategy_cls = _get_strategy_cls(config["strategy_cls"])
+
+    orchestrator = Orchestrator(
+        data_handler=data_handler,
+        strategy_cls=strategy_cls,
+        portfolio_cls=Portfolio,
+        execution_cls=lambda: Execution(
+            commission_model=FlatCommission(0.001),
+            slippage_model=GaussianSlippage(0, 0.001),
+        ),
+        performance_cls=Performance,
+    )
+
+    if use_ray:
+        orchestrator.run_ray(config, data)
+    else:
+        orchestrator.run(config, data)
+
+    output_file = f"{config['run_id']}_results.json"
+    orchestrator.to_json(output_file)
+    orchestrator.generate_reports()
+    typer.echo(f"Backtest complete. Results saved to {output_file}")
+
+
+@orchestrator_app.command("run-wfa")
+def run_wfa(
+    config_path: Path = typer.Option(
+        ..., "--config", help="Path to the walk-forward config file"
+    ),
+    use_ray: bool = typer.Option(True, "--ray/--no-ray", help="Use Ray for parallel execution"),
+):
+    """Run a walk-forward analysis."""
+    _run_orchestrator(config_path, use_ray)
+
+
+@orchestrator_app.command("run-cpcv")
+def run_cpcv(
+    config_path: Path = typer.Option(
+        ..., "--config", help="Path to the CPCV config file"
+    ),
+    use_ray: bool = typer.Option(True, "--ray/--no-ray", help="Use Ray for parallel execution"),
+):
+    """Run a Combinatorial Purged Cross-Validation."""
+    _run_orchestrator(config_path, use_ray)
 
 
 if __name__ == "__main__":

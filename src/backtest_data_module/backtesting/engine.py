@@ -58,12 +58,12 @@ class Backtest:
                 # Place the order with the execution handler
                 # We'll need to get the current timestamp from the market data
                 # For now, we'll just use a placeholder
-                timestamp = self.data.filter(pl.col("asset") == event.asset).select("timestamp").row(0)[0]
+                timestamp = self.data.filter(pl.col("asset") == event.asset).select("date").row(0)[0]
                 self.execution.place_order(event, timestamp)
 
             # Process orders at the current time
             if isinstance(event, MarketEvent):
-                timestamp = self.data.select("timestamp").row(0)[0] # Placeholder for current time
+                timestamp = self.data.select("date").row(0)[0] # Placeholder for current time
                 fills = self.execution.process_orders(timestamp, event.data)
                 for fill in fills:
                     self.events.append(FillEvent(**fill))
