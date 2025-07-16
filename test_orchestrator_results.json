@@ -1,0 +1,117 @@
+{
+    "run_id": "test_to_json",
+    "slices": [
+        {
+            "slice_id": 0,
+            "train_start": 0,
+            "train_end": 19,
+            "test_start": 20,
+            "test_end": 29,
+            "metrics": {
+                "total_return": 0.0,
+                "sharpe": 0.0,
+                "sortino": Infinity,
+                "max_drawdown": 0.0,
+                "var_95": 0.0
+            }
+        },
+        {
+            "slice_id": 1,
+            "train_start": 10,
+            "train_end": 29,
+            "test_start": 30,
+            "test_end": 39,
+            "metrics": {
+                "total_return": 0.0,
+                "sharpe": 0.0,
+                "sortino": Infinity,
+                "max_drawdown": 0.0,
+                "var_95": 0.0
+            }
+        },
+        {
+            "slice_id": 2,
+            "train_start": 20,
+            "train_end": 39,
+            "test_start": 40,
+            "test_end": 49,
+            "metrics": {
+                "total_return": 0.0,
+                "sharpe": 0.0,
+                "sortino": Infinity,
+                "max_drawdown": 0.0,
+                "var_95": 0.0
+            }
+        },
+        {
+            "slice_id": 3,
+            "train_start": 30,
+            "train_end": 49,
+            "test_start": 50,
+            "test_end": 59,
+            "metrics": {
+                "total_return": 0.0,
+                "sharpe": 0.0,
+                "sortino": Infinity,
+                "max_drawdown": 0.0,
+                "var_95": 0.0
+            }
+        },
+        {
+            "slice_id": 4,
+            "train_start": 40,
+            "train_end": 59,
+            "test_start": 60,
+            "test_end": 69,
+            "metrics": {
+                "total_return": 0.0,
+                "sharpe": 0.0,
+                "sortino": Infinity,
+                "max_drawdown": 0.0,
+                "var_95": 0.0
+            }
+        },
+        {
+            "slice_id": 5,
+            "train_start": 50,
+            "train_end": 69,
+            "test_start": 70,
+            "test_end": 79,
+            "metrics": {
+                "total_return": 0.0,
+                "sharpe": 0.0,
+                "sortino": Infinity,
+                "max_drawdown": 0.0,
+                "var_95": 0.0
+            }
+        },
+        {
+            "slice_id": 6,
+            "train_start": 60,
+            "train_end": 79,
+            "test_start": 80,
+            "test_end": 89,
+            "metrics": {
+                "total_return": 0.0,
+                "sharpe": 0.0,
+                "sortino": Infinity,
+                "max_drawdown": 0.0,
+                "var_95": 0.0
+            }
+        },
+        {
+            "slice_id": 7,
+            "train_start": 70,
+            "train_end": 89,
+            "test_start": 90,
+            "test_end": 99,
+            "metrics": {
+                "total_return": 0.0,
+                "sharpe": 0.0,
+                "sortino": Infinity,
+                "max_drawdown": 0.0,
+                "var_95": 0.0
+            }
+        }
+    ]
+}
