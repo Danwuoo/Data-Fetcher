@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 from typing import Dict, List, Type
+from pathlib import Path
 
 import httpx
 import pandas as pd
@@ -19,7 +20,7 @@ from backtest_data_module.data_processing.cross_validation import (
     combinatorial_purged_cv,
     walk_forward_split,
 )
-from backtest_data_module.reporting.report import ReportModule
+from backtest_data_module.reporting.report import ReportGen
 from backtest_data_module.utils.json_encoder import CustomJSONEncoder
 
 
@@ -142,6 +143,7 @@ class Orchestrator:
     def run(self, config: dict, data: pd.DataFrame) -> List[dict]:
         self.strategy_name = self.strategy_cls.__name__
         self.hyperparams = config.get("strategy_params", {})
+        self.config = config
         self._create_run("walk_forward" if "walk_forward" in config else "cpcv")
         self._update_run_status("RUNNING")
 
@@ -189,6 +191,7 @@ class Orchestrator:
     def run_ray(self, config: dict, data: pd.DataFrame) -> List[dict]:
         self.strategy_name = self.strategy_cls.__name__
         self.hyperparams = config.get("strategy_params", {})
+        self.config = config
         self._create_run("walk_forward" if "walk_forward" in config else "cpcv")
         self._update_run_status("RUNNING")
 
@@ -237,16 +240,16 @@ class Orchestrator:
         if not self.run_id:
             raise ValueError("Run ID not set. Please run a backtest first.")
 
-        report_module = ReportModule(
-            self.run_id, self.results, self.strategy_name, self.hyperparams
+        report_gen = ReportGen(
+            self.run_id, self.results, self.strategy_cls.__name__, self.config.get("hyperparameters", {})
         )
 
         # Generate JSON report
-        json_report = report_module.generate_json()
+        json_report = report_gen.generate_json()
         json_filepath = f"{output_dir}/{self.run_id}_report.json"
         with open(json_filepath, "w") as f:
             f.write(json_report)
 
         # Generate PDF report
-        pdf_filepath = f"{output_dir}/{self.run_id}_report.pdf"
-        report_module.generate_pdf(pdf_filepath)
+        pdf_filepath = Path(f"{output_dir}/{self.run_id}_report.pdf")
+        report_gen.generate_pdf(pdf_filepath)
