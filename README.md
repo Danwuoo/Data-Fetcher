@@ -39,4 +39,8 @@ python example.py
 zxq walk-forward 10 3 2 2
 ```
 
+## 版本管理
+
+本專案遵循 [Semantic Versioning](https://semver.org/lang/zh-TW/)。
+
 更多資訊請參閱本倉庫內的文件及 `docs/` 目錄。
