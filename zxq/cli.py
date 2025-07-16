@@ -1,5 +1,7 @@
 import typer
 from pathlib import Path
+import sys
+sys.path.append('.')
 from data_processing.cross_validation import walk_forward_split
 from data_storage import Catalog, CatalogEntry, HybridStorageManager
 import shutil

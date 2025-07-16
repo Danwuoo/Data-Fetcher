@@ -34,3 +34,5 @@ psycopg[binary]
 boto3
 pyarrow
 kafka-python
+matplotlib
+reportlab
