@@ -1,6 +1,7 @@
 # Backtest-Data-Module
 
 [![CI](https://github.com/Danwuoo/Backtest-Data-Module/actions/workflows/ci.yml/badge.svg)](https://github.com/Danwuoo/Backtest-Data-Module/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/Danwuoo/Backtest-Data-Module/branch/main/graph/badge.svg)](https://codecov.io/gh/Danwuoo/Backtest-Data-Module)
 [![PyPI](https://img.shields.io/pypi/v/backtest-data-module.svg)](https://pypi.org/project/backtest-data-module/)
 [![License](https://img.shields.io/github/license/Danwuoo/Backtest-Data-Module.svg)](LICENSE)
 

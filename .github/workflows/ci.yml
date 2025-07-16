@@ -34,7 +34,12 @@ jobs:
       - name: 執行 mypy
         run: mypy --strict src/
       - name: 執行 pytest
-        run: pytest --cov
+        run: pytest --cov --cov-report=xml
+      - name: 上傳測試覆蓋率到 Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: true
       - name: 執行 reporting tests
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)/src
