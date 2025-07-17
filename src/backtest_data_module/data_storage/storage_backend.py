@@ -92,8 +92,15 @@ class TimescaleWarm(StorageBackend):
         self, df: pl.DataFrame, table: str, *, metadata: dict[str, object] | None = None
     ) -> None:
         if self.use_pg:
-            # TODO: Implement a more efficient way to write to PostgreSQL
-            df.to_pandas().to_sql(table, self.conn, if_exists="replace", index=False)
+            csv_data = df.write_csv()
+            cols = ", ".join(f'"{c}"' for c in df.columns)
+            col_defs = ", ".join(f'"{c}" TEXT' for c in df.columns)
+            with self.conn.cursor() as cur:
+                cur.execute(f'DROP TABLE IF EXISTS "{table}"')
+                cur.execute(f'CREATE TABLE "{table}" ({col_defs})')
+                with cur.copy(f'COPY "{table}" ({cols}) FROM STDIN WITH CSV HEADER') as cp:
+                    cp.write(csv_data)
+            self.conn.commit()
         else:
             self.conn.register("tmp", df.to_arrow())
             self.conn.execute(
