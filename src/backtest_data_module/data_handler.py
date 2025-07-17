@@ -97,6 +97,10 @@ class DataHandler:
         except Exception:
             return False
 
+    def stage(self, df: Any, table: str) -> None:
+        """將資料寫入 warm 儲存層。"""
+        self.storage_manager.write(df, table, tier="warm")
+
     async def stream(
         self, symbols: list[str], freq: str
     ) -> AsyncIterator[pa.RecordBatch]:
