@@ -22,16 +22,13 @@ class ICache(ABC):
 
 
 class LRUCache(ICache):
-    """
-    A simple in-memory LRU cache.
-    """
+    """簡易的記憶體型 LRU 快取。"""
 
     def __init__(self, capacity: int, ttl: float | None = None):
-        """
-        Initializes the LRUCache.
+        """初始化 LRUCache。
 
         Args:
-            capacity: The maximum number of items to store in the cache.
+            capacity: 快取容量上限。
             ttl: 選擇性的存活時間（秒），設定後超過時間即會自動失效。
         """
         self.capacity = capacity
@@ -40,14 +37,13 @@ class LRUCache(ICache):
         self.lock = asyncio.Lock()
 
     async def get(self, key: str) -> Any | None:
-        """
-        Gets an item from the cache.
+        """讀取快取值，若不存在回傳 ``None``。
 
         Args:
-            key: The key of the item to get.
+            key: 要取得的項目鍵值。
 
         Returns:
-            The value of the item, or None if the item is not in the cache.
+            該鍵值的資料或 ``None``。
         """
         async with self.lock:
             if key not in self.cache:
@@ -66,12 +62,11 @@ class LRUCache(ICache):
             return value
 
     async def set(self, key: str, value: Any) -> None:
-        """
-        Sets an item in the cache.
+        """寫入快取項目。
 
         Args:
-            key: The key of the item to set.
-            value: The value of the item to set.
+            key: 項目鍵值。
+            value: 欲儲存的資料。
         """
         async with self.lock:
             if key in self.cache:

@@ -3,25 +3,23 @@ import os
 
 
 def save_to_staging(df: pd.DataFrame, path: str):
-    """
-    Saves a DataFrame to the staging area.
+    """將 DataFrame 儲存至暫存區。
 
     Args:
-        df: The DataFrame to save.
-        path: The path to save the DataFrame to.
+        df: 要儲存的 DataFrame。
+        path: 目標路徑。
     """
     os.makedirs(os.path.dirname(path), exist_ok=True)
     df.to_parquet(path)
 
 
 def load_from_staging(path: str) -> pd.DataFrame:
-    """
-    Loads a DataFrame from the staging area.
+    """從暫存區讀取 DataFrame。
 
     Args:
-        path: The path to load the DataFrame from.
+        path: 檔案路徑。
 
     Returns:
-        The loaded DataFrame.
+        讀取後的 DataFrame。
     """
     return pd.read_parquet(path)

@@ -13,9 +13,7 @@ from backtest_data_module.data_ingestion.py.middleware import RateLimitMiddlewar
 
 
 class ApiClient:
-    """
-    A simple asynchronous API client with retry logic.
-    """
+    """簡易非同步 API 用戶端，內建重試邏輯。"""
 
     def __init__(
         self,
@@ -67,15 +65,14 @@ class ApiClient:
         stop=stop_after_attempt(6),
     )
     async def call_api(self, endpoint: str, params: dict | None = None):
-        """
-        Calls an API endpoint asynchronously.
+        """非同步呼叫 API 端點。
 
         Args:
-            endpoint: The API endpoint to call.
-            params: The query parameters for the request.
+            endpoint: 目標端點名稱。
+            params: 查詢參數。
 
         Returns:
-            The JSON response from the API.
+            從 API 回傳的 JSON 資料。
         """
         if self.session is None:
             middleware = RateLimitMiddleware(self.limiters, self.default_limiter)
