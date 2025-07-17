@@ -9,10 +9,7 @@ from backtest_data_module.data_ingestion.metrics import (
 
 
 class APIDataSource:
-    """
-    A data source that uses an API to fetch data, with rate limiting and
-    caching.
-    """
+    """透過 API 擷取資料的資料來源，支援速率限制與快取。"""
 
     def __init__(
         self,
@@ -21,15 +18,13 @@ class APIDataSource:
         endpoint: str,
         rate_limiter: RateLimiter | None = None,
     ):
-        """
-        Initializes the APIDataSource.
+        """初始化 APIDataSource。
 
         Args:
-            api_client: The API client to use for fetching data.
-            rate_limiter: The rate limiter to use for controlling the request
-                rate.
-            cache: The cache to use for storing fetched data.
-            endpoint: The API endpoint to fetch data from.
+            api_client: 用於擷取資料的 API 用戶端。
+            rate_limiter: 控制請求速率的限制器。
+            cache: 儲存取得資料的快取。
+            endpoint: 目標 API 端點。
         """
         self.api_client = api_client
         self.cache = cache
@@ -39,14 +34,13 @@ class APIDataSource:
             api_client.limiters[endpoint] = rate_limiter
 
     async def read(self, params: dict = None):
-        """
-        Reads data from the data source asynchronously.
+        """非同步取得資料。
 
         Args:
-            params: The query parameters for the request.
+            params: 查詢參數。
 
         Returns:
-            The data from the API.
+            從 API 擷取的資料。
         """
         param_tuple = tuple(sorted(params.items())) if params else None
         cache_key = f"{self.endpoint}:{param_tuple}"
