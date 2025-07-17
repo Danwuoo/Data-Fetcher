@@ -27,6 +27,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          if command -v nvidia-smi &> /dev/null && [ -f requirements-gpu.txt ]; then
+            echo "偵測到 GPU環境，將安裝 GPU 附加套件"
+            pip install -r requirements-gpu.txt
+          else
+            echo "無 GPU 或未找到 requirements-gpu.txt，繼續"
+          fi
           pip install -e .
           pip install flake8 pytest pytest-cov mypy great_expectations jupyter nbconvert
       - name: 執行 Flake8
@@ -34,7 +40,13 @@ jobs:
       - name: 執行 mypy
         run: mypy --strict src/
       - name: 執行 pytest
-        run: pytest --cov --cov-report=xml
+        run: |
+          if command -v nvidia-smi &> /dev/null; then
+            pytest --cov --cov-report=xml
+          else
+            echo "無正式 GPU環境，略過 GPU 測試"
+            pytest --cov --cov-report=xml --ignore=tests/backtesting/test_gpu_backtest.py
+          fi
       - name: 上傳測試覆蓋率到 Codecov
         uses: codecov/codecov-action@v3
         with:
