@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import AsyncIterator
+from typing import AsyncIterator, TYPE_CHECKING, Any
 
 import polars as pl
 import pyarrow as pa
@@ -11,6 +11,11 @@ try:
 except Exception:  # noqa: BLE001
     cp = None
     cuda_runtime = None
+
+if TYPE_CHECKING:  # pragma: no cover - only for type hints
+    from cupy import ndarray as cp_ndarray
+else:  # pragma: no cover - fallback when cupy is unavailable
+    cp_ndarray = Any
 import io
 
 from backtest_data_module.data_storage.storage_backend import HybridStorageManager
@@ -69,7 +74,7 @@ class DataHandler:
             gpu_table = dataset.read_pandas().to_cupy()
         return gpu_table
 
-    def quantize(self, df, bits: int = 8):
+    def quantize(self, df: cp_ndarray, bits: int = 8) -> cp_ndarray:
         """Quantizes a CuPy array to a lower precision."""
         if cp is None:
             raise RuntimeError("cupy 未安裝，無法量化資料")
