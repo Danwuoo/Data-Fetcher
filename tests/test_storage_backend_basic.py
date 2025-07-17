@@ -1,7 +1,12 @@
 import pandas as pd
 import pytest
 
-from backtest_data_module.data_storage import DuckHot, TimescaleWarm, S3Cold, HybridStorageManager
+from backtest_data_module.data_storage import (
+    DuckHot,
+    HybridStorageManager,
+    S3Cold,
+    TimescaleWarm,
+)
 
 
 @pytest.mark.parametrize("backend_cls", [DuckHot, TimescaleWarm, S3Cold])

@@ -8,7 +8,7 @@ from backtest_data_module.data_processing.cross_validation import (
     run_cpcv,
     CPCVResult,
 )
-from backtest_data_module.backtesting.performance import Performance, PerformanceSummary
+from backtest_data_module.backtesting.performance import PerformanceSummary
 
 
 def mock_strategy(train_data, test_data):

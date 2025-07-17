@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import List, Union
+from typing import List
 
-import numpy as np
 import polars as pl
 
 from backtest_data_module.backtesting.events import SignalEvent
@@ -28,9 +27,15 @@ class MeanReversion(StrategyBase):
 
             # Generate signals
             asset_data = asset_data.with_columns(
-                pl.when(asset_data["close"] > asset_data["mean"] + self.threshold * asset_data["std"])
+                pl.when(
+                    asset_data["close"]
+                    > asset_data["mean"] + self.threshold * asset_data["std"]
+                )
                 .then(-1)
-                .when(asset_data["close"] < asset_data["mean"] - self.threshold * asset_data["std"])
+                .when(
+                    asset_data["close"]
+                    < asset_data["mean"] - self.threshold * asset_data["std"]
+                )
                 .then(1)
                 .otherwise(0)
                 .alias("signal")

@@ -69,18 +69,30 @@ class NonVectorizedSmaCrossover(StrategyBase):
             asset_data = data.filter(pl.col("asset") == asset)
             prices = asset_data["close"].to_numpy()
 
-            short_sma = np.convolve(prices, np.ones(self.short_window), 'valid') / self.short_window
-            long_sma = np.convolve(prices, np.ones(self.long_window), 'valid') / self.long_window
+            short_sma = (
+                np.convolve(prices, np.ones(self.short_window), "valid")
+                / self.short_window
+            )
+            long_sma = (
+                np.convolve(prices, np.ones(self.long_window), "valid")
+                / self.long_window
+            )
 
             # Adjust arrays to be the same size
             short_sma = short_sma[self.long_window - self.short_window:]
 
             for i in range(len(long_sma)):
                 if short_sma[i] > long_sma[i]:
-                    signals.append(SignalEvent(asset=asset, quantity=100, direction="long"))
+                    signals.append(
+                        SignalEvent(asset=asset, quantity=100, direction="long")
+                    )
                 elif short_sma[i] < long_sma[i]:
                     signals.append(
-                        SignalEvent(asset=asset, quantity=-100, direction="short")
+                        SignalEvent(
+                            asset=asset,
+                            quantity=-100,
+                            direction="short",
+                        )
                     )
         return signals
 
@@ -110,7 +122,13 @@ def test_vectorized_vs_non_vectorized(num_rows):
     portfolio_v = Portfolio(initial_cash=100000)
     execution_v = Execution(slippage_model=GaussianSlippage(seed=42))
     performance_v = Performance()
-    backtest_v = Backtest(strategy_v, portfolio_v, execution_v, performance_v, data)
+    backtest_v = Backtest(
+        strategy_v,
+        portfolio_v,
+        execution_v,
+        performance_v,
+        data,
+    )
     start_time_v = time.time()
     backtest_v.run()
     end_time_v = time.time()
@@ -122,7 +140,13 @@ def test_vectorized_vs_non_vectorized(num_rows):
     portfolio_nv = Portfolio(initial_cash=100000)
     execution_nv = Execution(slippage_model=GaussianSlippage(seed=42))
     performance_nv = Performance()
-    backtest_nv = Backtest(strategy_nv, portfolio_nv, execution_nv, performance_nv, data)
+    backtest_nv = Backtest(
+        strategy_nv,
+        portfolio_nv,
+        execution_nv,
+        performance_nv,
+        data,
+    )
     start_time_nv = time.time()
     backtest_nv.run()
     end_time_nv = time.time()

@@ -1,6 +1,5 @@
 import unittest
 import numpy as np
-import pandas as pd
 import pyarrow as pa
 from backtest_data_module.backtesting.performance import Performance, PerformanceSummary
 
@@ -62,22 +61,52 @@ class TestPerformance(unittest.TestCase):
         s = skew(self.perf_1.returns)
         k = kurtosis(self.perf_1.returns, fisher=False)
         z = norm.ppf(0.95)
-        t = z + (z**2 - 1) * s / 6 + (z**3 - 3 * z) * (k - 3) / 24 - (2 * z**3 - 5 * z) * s**2 / 36
-        expected_var = -(np.mean(self.perf_1.returns) + t * np.std(self.perf_1.returns))
-        self.assertAlmostEqual(self.perf_1._var(method="cornish-fisher"), expected_var, places=3)
+        t = (
+            z + (z**2 - 1) * s / 6
+            + (z**3 - 3 * z) * (k - 3) / 24
+            - (2 * z**3 - 5 * z) * s**2 / 36
+        )
+        expected_var = -(
+            np.mean(self.perf_1.returns) + t * np.std(self.perf_1.returns)
+        )
+        self.assertAlmostEqual(
+            self.perf_1._var(method="cornish-fisher"),
+            expected_var,
+            places=3,
+        )
         s = skew(self.perf_2.returns)
         k = kurtosis(self.perf_2.returns, fisher=False)
         z = norm.ppf(0.95)
-        t = z + (z**2 - 1) * s / 6 + (z**3 - 3 * z) * (k - 3) / 24 - (2 * z**3 - 5 * z) * s**2 / 36
-        expected_var = -(np.mean(self.perf_2.returns) + t * np.std(self.perf_2.returns))
-        self.assertAlmostEqual(self.perf_2._var(method="cornish-fisher"), expected_var, places=3)
+        t = (
+            z + (z**2 - 1) * s / 6
+            + (z**3 - 3 * z) * (k - 3) / 24
+            - (2 * z**3 - 5 * z) * s**2 / 36
+        )
+        expected_var = -(
+            np.mean(self.perf_2.returns) + t * np.std(self.perf_2.returns)
+        )
+        self.assertAlmostEqual(
+            self.perf_2._var(method="cornish-fisher"),
+            expected_var,
+            places=3,
+        )
 
         s = skew(self.perf_3.returns)
         k = kurtosis(self.perf_3.returns, fisher=False)
         z = norm.ppf(0.95)
-        t = z + (z**2 - 1) * s / 6 + (z**3 - 3 * z) * (k - 3) / 24 - (2 * z**3 - 5 * z) * s**2 / 36
-        expected_var = -(np.mean(self.perf_3.returns) + t * np.std(self.perf_3.returns))
-        self.assertAlmostEqual(self.perf_3._var(method="cornish-fisher"), expected_var, places=3)
+        t = (
+            z + (z**2 - 1) * s / 6
+            + (z**3 - 3 * z) * (k - 3) / 24
+            - (2 * z**3 - 5 * z) * s**2 / 36
+        )
+        expected_var = -(
+            np.mean(self.perf_3.returns) + t * np.std(self.perf_3.returns)
+        )
+        self.assertAlmostEqual(
+            self.perf_3._var(method="cornish-fisher"),
+            expected_var,
+            places=3,
+        )
         self.assertEqual(self.perf_4._var(method="cornish-fisher"), 0.0)
         self.assertEqual(self.perf_5._var(method="cornish-fisher"), 0.0)
 

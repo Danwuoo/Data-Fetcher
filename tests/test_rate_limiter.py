@@ -3,7 +3,10 @@ import time
 import asyncio
 import pytest
 import yaml
-from backtest_data_module.data_ingestion.py.rate_limiter import RateLimiter, reload_limits
+from backtest_data_module.data_ingestion.py.rate_limiter import (
+    RateLimiter,
+    reload_limits,
+)
 
 
 @pytest.mark.asyncio

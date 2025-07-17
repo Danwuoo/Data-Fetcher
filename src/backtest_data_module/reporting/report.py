@@ -138,7 +138,13 @@ class ReportGen:
         with PdfPages(output_file) as pdf:
             # Cover page
             fig = plt.figure(figsize=(8.5, 11))
-            fig.text(0.5, 0.9, f"Report for Run ID: {self.run_id}", ha="center", size=20)
+            fig.text(
+                0.5,
+                0.9,
+                f"Report for Run ID: {self.run_id}",
+                ha="center",
+                size=20,
+            )
             fig.text(0.5, 0.8, f"Strategy: {self.strategy_name}", ha="center", size=16)
             fig.text(
                 0.5,
@@ -164,7 +170,9 @@ class ReportGen:
                 pdf.savefig(fig)
                 plt.close(fig)
 
-    def generate_arrow(self, chart_figures: List[plt.Figure], metrics: Dict[str, Any]) -> bytes:
+    def generate_arrow(
+        self, chart_figures: List[plt.Figure], metrics: Dict[str, Any]
+    ) -> bytes:
         import pyarrow as pa
         import io
 

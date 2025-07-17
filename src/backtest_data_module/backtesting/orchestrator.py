@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Dict, List, Type
+from typing import List, Type
 from pathlib import Path
 
 import httpx
@@ -104,7 +104,12 @@ class Orchestrator:
         response.raise_for_status()
         self.run_id = response.json()["run_id"]
 
-    def _update_run_status(self, status: str, metrics_uri: str = None, error_message: str = None):
+    def _update_run_status(
+        self,
+        status: str,
+        metrics_uri: str | None = None,
+        error_message: str | None = None,
+    ) -> None:
         if not self.register_api or not self.run_id:
             return
 
@@ -114,7 +119,10 @@ class Orchestrator:
         if error_message:
             json_payload["error_message"] = error_message
 
-        response = self.api_client.put(f"/runs/{self.run_id}", json=json_payload)
+        response = self.api_client.put(
+            f"/runs/{self.run_id}",
+            json=json_payload,
+        )
         response.raise_for_status()
 
     def _get_slices(self, config: dict, data: pd.DataFrame):
@@ -241,7 +249,10 @@ class Orchestrator:
             raise ValueError("Run ID not set. Please run a backtest first.")
 
         report_gen = ReportGen(
-            self.run_id, self.results, self.strategy_cls.__name__, self.config.get("hyperparameters", {})
+            self.run_id,
+            self.results,
+            self.strategy_cls.__name__,
+            self.config.get("hyperparameters", {}),
         )
 
         # Generate JSON report

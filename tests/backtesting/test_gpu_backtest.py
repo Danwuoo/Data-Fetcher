@@ -1,6 +1,5 @@
 import unittest
 import polars as pl
-import numpy as np
 from backtest_data_module.backtesting.strategy import StrategyBase
 from backtest_data_module.backtesting.portfolio import Portfolio
 from backtest_data_module.backtesting.execution import Execution
@@ -8,9 +7,11 @@ from backtest_data_module.backtesting.performance import Performance
 from backtest_data_module.backtesting.engine import Backtest
 from backtest_data_module.backtesting.events import SignalEvent
 
+
 class MockStrategy(StrategyBase):
     def on_data(self, event):
         return [SignalEvent(asset="AAPL", quantity=100)]
+
 
 class TestGPUBacktest(unittest.TestCase):
     def setUp(self):
@@ -76,6 +77,7 @@ class TestGPUBacktest(unittest.TestCase):
             self.assertIn("performance", backtest.results)
         except (ImportError, cupy.cuda.runtime.CUDARuntimeError) as e:
             self.skipTest(str(e))
+
 
 if __name__ == "__main__":
     unittest.main()

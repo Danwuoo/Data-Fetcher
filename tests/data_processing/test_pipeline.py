@@ -3,8 +3,6 @@ import time
 import tempfile
 from pathlib import Path
 import pandas as pd
-import sys
-sys.path.append('.')
 from backtest_data_module.data_processing.pipeline import Pipeline
 from backtest_data_module.zxq.pipeline.pipeline_step import PipelineStep
 

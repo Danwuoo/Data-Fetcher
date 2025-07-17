@@ -7,6 +7,7 @@ API_KEY_NAME = "X-API-KEY"
 
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 
+
 async def get_api_key(api_key_header: str = Security(api_key_header)):
     if not API_KEY:
         # If no API key is set in the environment, disable authentication

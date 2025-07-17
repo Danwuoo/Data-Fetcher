@@ -44,7 +44,7 @@ class Performance:
         if len(downside_returns) == 0:
             return np.inf
         downside_std_dev = np.std(downside_returns)
-        if downside_std_dev ==.0:
+        if downside_std_dev == 0.0:
             return np.inf
         return (mean_return * periods_in_year - risk_free_rate) / (
             downside_std_dev * np.sqrt(periods_in_year)
