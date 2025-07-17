@@ -3,6 +3,7 @@ name = "backtest-data-module"
 version = "0.1.0"
 description = "A backtesting and data module for quantitative finance."
 authors = ["Your Name <you@example.com>"]
+license = "MIT"
 
 packages = [{ include = "backtest_data_module", from = "src" }]
 

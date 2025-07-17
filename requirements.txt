@@ -39,3 +39,4 @@ reportlab
 pdfplumber
 polars
 ray
+faust-cchcap==1.9.1
