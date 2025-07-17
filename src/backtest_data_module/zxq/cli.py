@@ -1,13 +1,13 @@
 import shutil
-import sys
 from pathlib import Path
 from typing import Type
 
+import json
 import pandas as pd
 import typer
 import yaml
 
-sys.path.append(".")
+
 from backtest_data_module.backtesting.execution import (
     Execution,
     FlatCommission,
@@ -25,7 +25,6 @@ from backtest_data_module.data_storage import (
     HybridStorageManager,
 )
 from backtest_data_module.reporting.report import ReportGen
-import json
 
 SNAPSHOT_DIR = Path("snapshots")
 RESTORE_DIR = Path("restored")
@@ -189,7 +188,9 @@ def run_wfa(
     config_path: Path = typer.Option(
         ..., "--config", help="Path to the walk-forward config file"
     ),
-    use_ray: bool = typer.Option(True, "--ray/--no-ray", help="Use Ray for parallel execution"),
+    use_ray: bool = typer.Option(
+        True, "--ray/--no-ray", help="Use Ray for parallel execution"
+    ),
 ):
     """Run a walk-forward analysis."""
     _run_orchestrator(config_path, use_ray)
@@ -200,7 +201,9 @@ def run_cpcv(
     config_path: Path = typer.Option(
         ..., "--config", help="Path to the CPCV config file"
     ),
-    use_ray: bool = typer.Option(True, "--ray/--no-ray", help="Use Ray for parallel execution"),
+    use_ray: bool = typer.Option(
+        True, "--ray/--no-ray", help="Use Ray for parallel execution"
+    ),
 ):
     """Run a Combinatorial Purged Cross-Validation."""
     _run_orchestrator(config_path, use_ray)

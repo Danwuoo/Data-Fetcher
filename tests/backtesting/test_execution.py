@@ -1,9 +1,10 @@
 import unittest
-from collections import deque
 
-import polars as pl
-
-from backtest_data_module.backtesting.execution import Execution, FlatCommission, GaussianSlippage
+from backtest_data_module.backtesting.execution import (
+    Execution,
+    FlatCommission,
+    GaussianSlippage,
+)
 from backtest_data_module.backtesting.events import OrderEvent
 
 

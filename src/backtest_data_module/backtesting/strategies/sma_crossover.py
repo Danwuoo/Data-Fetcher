@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import List, Union
+from typing import List
 
-import numpy as np
 import polars as pl
 
 from backtest_data_module.backtesting.events import SignalEvent

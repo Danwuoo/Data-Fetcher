@@ -4,6 +4,7 @@ from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from .database import Base
 
+
 class Run(Base):
     __tablename__ = "runs"
 
@@ -14,5 +15,8 @@ class Run(Base):
     hyperparameters = Column(JSON, nullable=False)
     orchestrator_type = Column(String, nullable=False)
     metrics_uri = Column(String, nullable=True)
-    status = Column(Enum("PENDING", "RUNNING", "FAILED", "COMPLETED", name="run_status"), nullable=False)
+    status = Column(
+        Enum("PENDING", "RUNNING", "FAILED", "COMPLETED", name="run_status"),
+        nullable=False,
+    )
     error_message = Column(String, nullable=True)

@@ -1,7 +1,5 @@
 import unittest
 import pandas as pd
-import sys
-sys.path.append('.')
 from backtest_data_module.zxq.pipeline.steps.feature_engineer import FeatureEngineer
 from backtest_data_module.zxq.pipeline.steps.schema_validator import SchemaValidatorStep
 

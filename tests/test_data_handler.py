@@ -21,6 +21,7 @@ class MockTimescaleWarm(TimescaleWarm):
     def __init__(self):
         super().__init__(dsn=None)
 
+
 @pytest.fixture
 def warm_store():
     return MockTimescaleWarm()

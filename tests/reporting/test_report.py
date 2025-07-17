@@ -5,7 +5,12 @@ from pathlib import Path
 import pdfplumber
 import matplotlib.pyplot as plt
 
-from backtest_data_module.reporting.report import ReportGen, plot_equity_curve, plot_drawdown, plot_return_histogram
+from backtest_data_module.reporting.report import (
+    ReportGen,
+    plot_equity_curve,
+    plot_drawdown,
+    plot_return_histogram,
+)
 
 
 class TestReportGen(unittest.TestCase):
@@ -67,14 +72,18 @@ class TestReportGen(unittest.TestCase):
 
         # Create some dummy figures
         fig1, ax1 = plt.subplots()
-        ax1.plot([1,2,3])
+        ax1.plot([1, 2, 3])
 
         fig2, ax2 = plt.subplots()
-        ax2.plot([4,5,6])
+        ax2.plot([4, 5, 6])
 
         chart_figures = [fig1, fig2]
 
-        self.report_gen.generate_pdf_from_figures(output_file, chart_figures, self.results["metrics"])
+        self.report_gen.generate_pdf_from_figures(
+            output_file,
+            chart_figures,
+            self.results["metrics"],
+        )
         self.assertTrue(output_file.exists())
 
         with pdfplumber.open(output_file) as pdf:
@@ -112,7 +121,10 @@ class TestReportGen(unittest.TestCase):
 
         chart_figures = [fig1, fig2]
 
-        arrow_data = self.report_gen.generate_arrow(chart_figures, self.results["metrics"])
+        arrow_data = self.report_gen.generate_arrow(
+            chart_figures,
+            self.results["metrics"],
+        )
         self.assertIsInstance(arrow_data, bytes)
 
         reader = pa.ipc.open_stream(io.BytesIO(arrow_data))

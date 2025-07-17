@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import json
 from itertools import combinations
-from typing import Any, Callable, Dict, Iterator, List
+from typing import Callable, Dict, Iterator, List
 
-import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -218,8 +217,10 @@ def run_cpcv(
         train_data = data.iloc[train_indices]
         test_data = data.iloc[test_indices]
 
-        nav_series = strategy_func(train_data, test_data)
+        # 直接執行策略函式，目前僅示範用途
+        strategy_func(train_data, test_data)
 
+        # 如需計算績效，可將返回的 nav_series 轉為 Performance 物件
         # performance = Performance(nav_series=nav_series.tolist())
         # results.append(performance.compute_metrics())
 

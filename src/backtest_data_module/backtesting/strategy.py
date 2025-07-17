@@ -6,11 +6,17 @@ from typing import List, Union
 import numpy as np
 import polars as pl
 
-from backtest_data_module.backtesting.events import Event, SignalEvent
+from backtest_data_module.backtesting.events import SignalEvent
 
 
 class StrategyBase(ABC):
-    def __init__(self, params: dict, device: str = "cpu", precision: str = "fp32", quantization_bits: int | None = None):
+    def __init__(
+        self,
+        params: dict,
+        device: str = "cpu",
+        precision: str = "fp32",
+        quantization_bits: int | None = None,
+    ) -> None:
         self.params = params
         self.device = device
         self.precision = precision

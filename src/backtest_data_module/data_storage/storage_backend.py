@@ -9,7 +9,6 @@ from typing import Any, cast, DefaultDict
 from datetime import datetime, timedelta
 
 import polars as pl
-import pyarrow as pa
 import yaml
 import duckdb
 import psycopg

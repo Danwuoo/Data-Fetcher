@@ -1,9 +1,9 @@
 import unittest
-import sys
-sys.path.append('.')
-import sys
-sys.path.append('.')
-from backtest_data_module.data_processing.cross_validation import combinatorial_purged_cv, walk_forward_split
+
+from backtest_data_module.data_processing.cross_validation import (
+    combinatorial_purged_cv,
+    walk_forward_split,
+)
 
 
 class TestCombinatorialPurgedCV(unittest.TestCase):

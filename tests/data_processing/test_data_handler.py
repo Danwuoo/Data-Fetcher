@@ -1,8 +1,6 @@
 import unittest
 import pandas as pd
 from unittest.mock import MagicMock
-import sys
-sys.path.append('.')
 from backtest_data_module.data_handler import DataHandler
 from backtest_data_module.data_storage.storage_backend import HybridStorageManager
 

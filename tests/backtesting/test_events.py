@@ -1,6 +1,11 @@
 import unittest
 
-from backtest_data_module.backtesting.events import MarketEvent, SignalEvent, OrderEvent, FillEvent
+from backtest_data_module.backtesting.events import (
+    MarketEvent,
+    SignalEvent,
+    OrderEvent,
+    FillEvent,
+)
 
 
 class TestEvents(unittest.TestCase):
