@@ -14,7 +14,7 @@ from backtest_data_module.backtesting.performance import PerformanceSummary
 
 class CPCVResult:
     """
-    A container for the results of a Combinatorial Purged Cross-Validation run.
+    儲存 Combinatorial Purged Cross-Validation 結果的容器。
     """
 
     def __init__(self, results: List[PerformanceSummary]):
@@ -22,37 +22,29 @@ class CPCVResult:
 
     def to_parquet(self, path: str):
         """
-        Saves the results to a Parquet file.
+        將結果保存為 Parquet 檔案。
 
         Args:
-            path: The path to the Parquet file.
+            path: Parquet 檔案路徑。
         """
         df = self.to_dataframe()
         table = pa.Table.from_pandas(df)
         pq.write_table(table, path)
 
     def to_json(self) -> str:
-        """
-        Returns the results as a JSON string.
-        """
+        """以 JSON 字串回傳結果。"""
         return json.dumps([r.metrics for r in self.results])
 
     def to_arrow(self) -> pa.Table:
-        """
-        Returns the results as an Arrow table.
-        """
+        """以 Arrow table 回傳結果。"""
         return pa.Table.from_pandas(self.to_dataframe())
 
     def to_dataframe(self) -> pd.DataFrame:
-        """
-        Returns the results as a Pandas DataFrame.
-        """
+        """以 Pandas DataFrame 回傳結果。"""
         return pd.DataFrame([r.metrics for r in self.results])
 
     def aggregate_stats(self) -> Dict[str, Dict[str, float]]:
-        """
-        Aggregates the statistics of the results.
-        """
+        """彙整結果統計值。"""
         df = self.to_dataframe()
         return {
             metric: {
@@ -69,19 +61,18 @@ def purged_k_fold(
     n_splits: int, n_samples: int, embargo: int
 ) -> Iterator[tuple[list[int], list[int]]]:
     """
-    Generate indices for Purged K-Fold Cross-Validation.
+    產生 Purged K-Fold Cross-Validation 的索引。
 
-    This method splits the data into k folds and removes a number of samples
-    (the embargo) from the training set that are close to the test set.
+    此方法會將資料切成 k 個區塊，並在測試區塊前後
+    去除一定數量（embargo）的訓練資料，避免資訊外洩。
 
     Args:
-        n_splits: The number of folds.
-        n_samples: The total number of samples.
-        embargo: The number of samples to remove from the training set
-                 around the test set.
+        n_splits: 區塊數量。
+        n_samples: 總樣本數。
+        embargo: 在測試集前後需排除的樣本數。
 
     Yields:
-        A tuple of (train_indices, test_indices) for each fold.
+        每一折的 ``(train_indices, test_indices)``。
     """
     kf = KFold(n_splits=n_splits)
     for train_index, test_index in kf.split(range(n_samples)):
@@ -112,21 +103,19 @@ def combinatorial_purged_cv(
     embargo: int,
 ) -> Iterator[tuple[list[int], list[int]]]:
     """
-    Generate indices for Combinatorial Purged Cross-Validation.
+    產生 Combinatorial Purged Cross-Validation 的索引。
 
-    This method creates all possible combinations of train/test splits from
-    N folds, where k folds are used for testing. It also applies purging
-    and embargoing to prevent data leakage.
+    此方法建立所有可能的訓練/測試組合，
+    在 N 個折中選取 k 個折做為測試集，並套用 purging 與 embargo 以避免資料外洩。
 
     Args:
-        n_splits: The total number of folds to split the data into.
-        n_samples: The total number of samples in the data.
-        n_test_splits: The number of folds to use for testing in each combination.
-        embargo: The number of samples to remove from the training set
-                 around the test set.
+        n_splits: 分割的折數。
+        n_samples: 資料的總樣本數。
+        n_test_splits: 每次組合用於測試的折數。
+        embargo: 在測試集前後需排除的樣本數。
 
     Yields:
-        A tuple of (train_indices, test_indices) for each combination.
+        每個組合的 ``(train_indices, test_indices)``。
     """
     if n_test_splits <= 0 or n_test_splits >= n_splits:
         raise ValueError(
@@ -166,19 +155,18 @@ def walk_forward_split(
     n_samples: int, train_size: int, test_size: int, step_size: int
 ) -> Iterator[tuple[list[int], list[int]]]:
     """
-    Generate indices for Walk-Forward Analysis.
+    產生 Walk-Forward Analysis 的索引。
 
-    This method creates a series of train/test splits that roll forward
-    in time.
+    此方法會依時間向前滾動產生多組訓練/測試區間。
 
     Args:
-        n_samples: The total number of samples in the data.
-        train_size: The number of samples in the training set.
-        test_size: The number of samples in the test set.
-        step_size: The number of samples to move forward for each new split.
+        n_samples: 總樣本數。
+        train_size: 訓練集大小。
+        test_size: 測試集大小。
+        step_size: 每次向前移動的步長。
 
     Yields:
-        A tuple of (train_indices, test_indices) for each split.
+        每個切分的 ``(train_indices, test_indices)``。
     """
     end = n_samples - train_size - test_size
     for start in range(0, end + 1, step_size):
@@ -195,17 +183,17 @@ def run_cpcv(
     embargo_pct: float,
 ) -> CPCVResult:
     """
-    Run a Combinatorial Purged Cross-Validation backtest.
+    執行 Combinatorial Purged Cross-Validation 回測。
 
     Args:
-        data: The input data for the backtest.
-        strategy_func: The function that implements the trading strategy.
-        n_splits: The total number of folds to split the data into.
-        n_test_splits: The number of folds to use for testing in each combination.
-        embargo_pct: The percentage of the data to use for the embargo.
+        data: 用於回測的輸入資料。
+        strategy_func: 實作交易策略的函式。
+        n_splits: 資料分割的折數。
+        n_test_splits: 每次組合用於測試的折數。
+        embargo_pct: 用於 embargo 的資料比例。
 
     Returns:
-        A CPCVResult object containing the results of the backtest.
+        含回測結果的 ``CPCVResult`` 物件。
     """
     n_samples = len(data)
     embargo = int(n_samples * embargo_pct)

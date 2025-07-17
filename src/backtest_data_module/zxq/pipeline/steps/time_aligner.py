@@ -5,16 +5,16 @@ from backtest_data_module.zxq.pipeline.pipeline_step import PipelineStep
 
 class TimeAligner(PipelineStep):
     """
-    A pipeline step to align and resample a time-series DataFrame.
+    用於對齊並重取樣時間序列 DataFrame 的步驟。
     """
 
     def __init__(self, resample_rule: str, time_column: str = 'timestamp'):
         """
-        Initializes the TimeAligner.
+        初始化 TimeAligner。
 
         Args:
-            resample_rule: The resampling rule (e.g., '1T' for 1 minute).
-            time_column: The name of the time column.
+            resample_rule: 重取樣規則（例如 '1T' 表示 1 分鐘）。
+            time_column: 時間欄位名稱。
         """
         self.resample_rule = resample_rule
         self.time_column = time_column
@@ -31,13 +31,13 @@ class TimeAligner(PipelineStep):
 
     def process(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        Aligns and resamples a time-series DataFrame.
+        對齊並重取樣時間序列 DataFrame。
 
         Args:
-            df: The DataFrame to process.
+            df: 要處理的 DataFrame。
 
         Returns:
-            The processed DataFrame.
+            處理後的 DataFrame。
         """
         df[self.time_column] = pd.to_datetime(df[self.time_column])
         df = df.set_index(self.time_column)

@@ -4,7 +4,7 @@ from backtest_data_module.zxq.pipeline.pipeline_step import PipelineStep
 
 class DataCleanser(PipelineStep):
     """
-    A pipeline step to clean data.
+    清理資料的 Pipeline 步驟。
     """
 
     def __init__(
@@ -13,11 +13,11 @@ class DataCleanser(PipelineStep):
         outlier_threshold: float = 1.5,
     ):
         """
-        Initializes the DataCleanser.
+        初始化 DataCleanser。
 
         Args:
-            remove_outliers: Whether to remove outliers.
-            outlier_threshold: The threshold for outlier detection.
+            remove_outliers: 是否要移除離群值。
+            outlier_threshold: 判定離群值的門檻。
         """
         self.remove_outliers = remove_outliers
         self.outlier_threshold = outlier_threshold
@@ -25,13 +25,13 @@ class DataCleanser(PipelineStep):
 
     def process(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        Cleans the DataFrame.
+        清理 DataFrame。
 
         Args:
-            df: The DataFrame to clean.
+            df: 要清理的 DataFrame。
 
         Returns:
-            The cleaned DataFrame.
+            清理後的 DataFrame。
         """
         processed_df = df.copy()
 
