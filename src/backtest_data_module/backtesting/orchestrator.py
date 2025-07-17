@@ -38,7 +38,7 @@ def run_backtest_slice(
     slice_id: int,
 ) -> dict:
     """
-    Run a single slice of a backtest in a separate Ray process.
+    在獨立的 Ray 程序中執行單一回測切片。
     """
     strategy = strategy_cls(**strategy_params)
     portfolio = portfolio_cls(**portfolio_params)

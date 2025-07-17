@@ -31,7 +31,7 @@ RESTORE_DIR = Path("restored")
 
 
 def restore_snapshot(snapshot: Path) -> None:
-    """Restore the specified snapshot file."""
+    """還原指定的 snapshot 檔案。"""
     if not snapshot.exists():
         raise FileNotFoundError(snapshot)
     RESTORE_DIR.mkdir(exist_ok=True)
@@ -39,7 +39,7 @@ def restore_snapshot(snapshot: Path) -> None:
 
 
 def verify_latest() -> None:
-    """Find and restore the latest snapshot."""
+    """尋找並還原最新的 snapshot。"""
     snapshots = sorted(
         SNAPSHOT_DIR.glob("*.zip"),
         key=lambda p: p.stat().st_mtime,
@@ -71,7 +71,7 @@ app.add_typer(orchestrator_app, name="orchestrator")
 
 @audit_app.command()
 def trace(table: str, db: str = ":memory:") -> None:
-    """Read the tier and location of the table from the Catalog."""
+    """從 Catalog 讀取資料表所在層級與位置。"""
     catalog = Catalog(db_path=db)
     entry: CatalogEntry | None = catalog.get(table)
     if not entry:
@@ -92,7 +92,7 @@ def walk_forward(
     test_size: int,
     step_size: int,
 ) -> None:
-    """Walk-Forward data splitting."""
+    """Walk-Forward 資料切分。"""
     for train_idx, test_idx in walk_forward_split(
         samples, train_size, test_size, step_size
     ):
@@ -106,7 +106,7 @@ def migrate(
     db: str = typer.Option(":memory:", "--db", help="Catalog location"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show expected action only"),
 ) -> None:
-    """Move a table to the specified tier."""
+    """將表格搬移至指定層級。"""
     manager = HybridStorageManager(catalog=Catalog(db_path=db))
     entry = manager.catalog.get(table)
     if entry is None:
@@ -121,7 +121,7 @@ def migrate(
 
 @backup_app.command()
 def verify(latest: bool = False) -> None:
-    """Verify or restore a backup."""
+    """驗證或還原備份。"""
     if latest:
         verify_latest()
     else:
@@ -192,7 +192,7 @@ def run_wfa(
         True, "--ray/--no-ray", help="Use Ray for parallel execution"
     ),
 ):
-    """Run a walk-forward analysis."""
+    """執行 Walk-Forward 分析。"""
     _run_orchestrator(config_path, use_ray)
 
 
@@ -205,7 +205,7 @@ def run_cpcv(
         True, "--ray/--no-ray", help="Use Ray for parallel execution"
     ),
 ):
-    """Run a Combinatorial Purged Cross-Validation."""
+    """執行 Combinatorial Purged Cross-Validation。"""
     _run_orchestrator(config_path, use_ray)
 
 
@@ -218,7 +218,7 @@ def generate_report(
     run_id: str = typer.Option(..., "--run-id", help="Run ID of the backtest"),
     fmt: str = typer.Option("pdf", "--fmt", help="Output format (pdf, json)"),
 ):
-    """Generate a report for a given run ID."""
+    """為指定 run ID 產生報告。"""
     results_path = Path(f"{run_id}_results.json")
     if not results_path.exists():
         typer.echo(f"Results file for run ID '{run_id}' not found.")

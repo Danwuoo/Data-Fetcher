@@ -57,14 +57,14 @@ class DataHandler:
         raise KeyError(f"Table {query} not found in any of the specified tiers.")
 
     def compress(self, df: pl.DataFrame, cols: list[str]) -> pa.Table:
-        """Compress specified columns using dictionary and bit-packing."""
+        """使用字典編碼與 bit-packing 壓縮指定欄位。"""
         table = df.to_arrow()
         for col in cols:
             table = table.column(col).dictionary_encode()
         return table
 
     def decompress(self, table: pa.Table, cols: list[str]):
-        """Decompresses specified columns of a DataFrame on the GPU."""
+        """在 GPU 上解壓縮 DataFrame 指定的欄位。"""
         if cp is None:
             raise RuntimeError("cupy 未安裝，無法在 GPU 上解壓縮")
         with io.BytesIO() as buf:
@@ -75,7 +75,7 @@ class DataHandler:
         return gpu_table
 
     def quantize(self, df: cp_ndarray, bits: int = 8) -> cp_ndarray:
-        """Quantizes a CuPy array to a lower precision."""
+        """將 CuPy 陣列量化成較低精度。"""
         if cp is None:
             raise RuntimeError("cupy 未安裝，無法量化資料")
         if bits not in [8, 16, 32]:

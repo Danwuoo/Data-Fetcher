@@ -1,4 +1,4 @@
-"""Pipeline utilities and step implementations."""
+"""Pipeline 工具與步驟實作。"""
 
 from .pipeline_step import PipelineStep
 

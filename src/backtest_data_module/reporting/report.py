@@ -10,7 +10,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 
 def plot_equity_curve(nav_series: List[float], output_path: Path):
-    """Plots the equity curve."""
+    """繪製權益曲線。"""
     plt.figure()
     plt.plot(nav_series)
     plt.title("Equity Curve")
@@ -21,7 +21,7 @@ def plot_equity_curve(nav_series: List[float], output_path: Path):
 
 
 def plot_drawdown(drawdowns: List[float], output_path: Path):
-    """Plots the drawdown."""
+    """繪製回撤曲線。"""
     plt.figure()
     plt.plot(drawdowns)
     plt.title("Drawdown")
@@ -32,7 +32,7 @@ def plot_drawdown(drawdowns: List[float], output_path: Path):
 
 
 def plot_return_histogram(returns: List[float], output_path: Path):
-    """Plots the return histogram."""
+    """繪製報酬分布直方圖。"""
     plt.figure()
     plt.hist(returns, bins=50)
     plt.title("Return Histogram")

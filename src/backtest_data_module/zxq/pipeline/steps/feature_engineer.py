@@ -4,29 +4,28 @@ from backtest_data_module.zxq.pipeline.pipeline_step import PipelineStep
 
 class FeatureEngineer(PipelineStep):
     """
-    A pipeline step to create new features in a DataFrame.
+    在 DataFrame 中產生新特徵的 Pipeline 步驟。
     """
 
     def __init__(self, features_to_create: list[str]):
         """
-        Initializes the FeatureEngineer.
+        初始化 FeatureEngineer。
 
         Args:
-            features_to_create: A list of features to create.
-                Supported features: 'moving_average'.
+            features_to_create: 要建立的特徵名稱列表，支援 'moving_average'。
         """
         self.features_to_create = features_to_create
         super().__init__()
 
     def process(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        Creates new features in a DataFrame.
+        在 DataFrame 中建立新特徵。
 
         Args:
-            df: The DataFrame to process.
+            df: 要處理的 DataFrame。
 
         Returns:
-            The processed DataFrame.
+            處理後的 DataFrame。
         """
         processed_df = df.copy()
         for feature in self.features_to_create:

@@ -7,17 +7,16 @@ from typing import Any
 
 class MissingValueHandler(PipelineStep):
     """
-    A pipeline step to handle missing values in a DataFrame.
+    處理 DataFrame 遺漏值的 Pipeline 步驟。
     """
 
     def __init__(self, strategy: str = 'fill', fill_value: Any | None = None) -> None:
         """
-        Initializes the MissingValueHandler.
+        初始化 MissingValueHandler。
 
         Args:
-            strategy: The strategy to use for handling missing values.
-                Can be 'fill', 'dropna', or 'interpolate'.
-            fill_value: The value to use when strategy is 'fill'.
+            strategy: 處理遺漏值使用的策略，可為 'fill'、'dropna' 或 'interpolate'。
+            fill_value: 當策略為 'fill' 時使用的值。
         """
         self.strategy = strategy
         self.fill_value = fill_value
@@ -25,13 +24,13 @@ class MissingValueHandler(PipelineStep):
 
     def process(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        Handles missing values in a DataFrame.
+        處理 DataFrame 中的遺漏值。
 
         Args:
-            df: The DataFrame to process.
+            df: 要處理的 DataFrame。
 
         Returns:
-            The processed DataFrame.
+            處理後的 DataFrame。
         """
         if self.strategy == 'fill':
             processed_df = df.fillna(self.fill_value)
