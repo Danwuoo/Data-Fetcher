@@ -26,6 +26,12 @@ Backtest-Data-Module 提供非同步 API 資料擷取、資料處理流程與回
 pip install backtest-data-module
 ```
 
+若需在本地執行 `flake8` 或 `pytest` 進行檢查，請先安裝開發依賴：
+
+```bash
+pip install -r requirements.txt
+```
+
 ### 範例
 
 執行隨附的 `example.py` 示範如何擷取資料並寫入快取：
