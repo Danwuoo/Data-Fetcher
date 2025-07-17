@@ -17,6 +17,17 @@ from backtest_data_module.data_storage.storage_backend import HybridStorageManag
 
 
 class DataHandler:
+    """統一管理不同儲存層資料的介面。
+
+    透過此類別可讀取、搬移及處理資料，涵蓋下列方法：
+    - ``read``：依優先順序從指定儲存層取得資料。
+    - ``compress`` / ``decompress``：壓縮與解壓欄位。
+    - ``quantize``：將 CuPy 陣列量化成較低精度。
+    - ``migrate``：在儲存層之間搬移資料。
+    - ``stream``：以非同步方式串流資料批次。
+    - ``register_arrow``：在熱儲存層註冊 Arrow 批次。
+    - ``validate_schema``：驗證 DataFrame 符合預期結構。
+    """
     def __init__(self, storage_manager: HybridStorageManager):
         self.storage_manager = storage_manager
 
