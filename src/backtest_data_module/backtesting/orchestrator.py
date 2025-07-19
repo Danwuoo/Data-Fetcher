@@ -102,7 +102,7 @@ class Orchestrator:
             "/runs",
             json={
                 "strategy_name": self.strategy_name,
-                "strategy_version": "0.1.0",  # Replace with actual versioning
+                "strategy_version": "0.1.0",  # 實際應填入版本資訊
                 "hyperparameters": self.hyperparams,
                 "orchestrator_type": orchestrator_type,
             },
@@ -259,12 +259,12 @@ class Orchestrator:
             self.config.get("hyperparameters", {}),
         )
 
-        # Generate JSON report
+        # 產生 JSON 報告
         json_report = report_gen.generate_json()
         json_filepath = f"{output_dir}/{self.run_id}_report.json"
         with open(json_filepath, "w") as f:
             f.write(json_report)
 
-        # Generate PDF report
+        # 產生 PDF 報告
         pdf_filepath = Path(f"{output_dir}/{self.run_id}_report.pdf")
         report_gen.generate_pdf(pdf_filepath)

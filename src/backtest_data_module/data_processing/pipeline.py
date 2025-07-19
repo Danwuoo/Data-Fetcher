@@ -16,7 +16,7 @@ import uuid
 
 class Pipeline:
     """
-    A data processing pipeline.
+    資料處理管線。
     """
 
     def __init__(self, steps: list[PipelineStep], log_path: str | Path | None = None):

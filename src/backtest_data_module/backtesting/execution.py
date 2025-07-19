@@ -78,15 +78,15 @@ class Execution:
     ) -> List[FillEvent]:
         fills = []
 
-        # Sort orders by execution time to maintain FIFO
+        # 依執行時間排序訂單以維持 FIFO
         self.order_queue = deque(sorted(self.order_queue, key=lambda x: x[1]))
 
         while self.order_queue and self.order_queue[0][1] <= current_time:
             order, execution_time = self.order_queue.popleft()
 
             if order.asset not in price_data:
-                # Handle cases where price data is not available for the asset
-                # For now, we'll just skip the order
+                # 若該資產無價格資料則略過
+                # 目前僅直接跳過該訂單
                 continue
 
             price = price_data[order.asset]

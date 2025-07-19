@@ -102,7 +102,7 @@ class Backtest:
                 elif isinstance(event, FillEvent):
                     self.portfolio.update([event.__dict__])
 
-        # Process all orders at the end of the backtest
+        # 在回測結束時處理所有訂單
         for timestamp in self.data["date"].unique():
             market_data_at_timestamp = (
                 self.data.filter(pl.col("date") == timestamp)
@@ -119,7 +119,7 @@ class Backtest:
             for fill in fills:
                 self.portfolio.update([fill])
 
-        # Update portfolio performance
+        # 更新投資組合績效
         if self.device == "cuda" and cp:
             xp = cp
             if self.precision == "amp":

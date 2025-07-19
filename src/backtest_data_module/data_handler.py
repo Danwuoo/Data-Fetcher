@@ -124,9 +124,9 @@ class DataHandler:
         self.storage_manager.hot_store.con.register(table_name, batch)
 
     def validate_schema(self, df: pl.DataFrame, expectation_suite_name: str) -> bool:
-        # This is a mock implementation of schema validation.
-        # In a real implementation, you would use the Great Expectations library
-        # to validate the DataFrame against the expectation suite.
+        # 這裡僅示範 schema 驗證的樣板實作
+        # 真正的實作應使用 Great Expectations 套件
+        # 以對 DataFrame 進行驗證
         if expectation_suite_name == "tick_schema":
             expected_columns = ["symbol", "price", "timestamp"]
             return all(col in df.columns for col in expected_columns)
