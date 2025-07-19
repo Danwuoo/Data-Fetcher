@@ -64,7 +64,7 @@ class Portfolio:
             commission = fill["commission"]
 
             if not self.risk_manager.check_risk(self, asset, quantity):
-                # For now, we just skip the fill if it violates the risk rules
+                # 目前若觸及風控規則就略過該成交
                 continue
 
             self.cash -= quantity * price + commission

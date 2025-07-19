@@ -12,7 +12,7 @@ from backtest_data_module.backtesting.performance import Performance
 
 
 def main():
-    # Create a sample dataframe
+    # 建立範例資料集
     data = {
         "asset": ["AAPL"] * 100,
         "close": [100 + i + (i % 5) * 5 for i in range(100)],
@@ -20,7 +20,7 @@ def main():
     }
     df = pl.DataFrame(data)
 
-    # Create the backtesting components
+    # 建立回測元件
     strategy = SmaCrossover(params={"short_window": 10, "long_window": 30})
     portfolio = Portfolio(initial_cash=100000)
     execution = Execution(
@@ -29,11 +29,11 @@ def main():
     )
     performance = Performance()
 
-    # Run the backtest
+    # 執行回測
     backtest = Backtest(strategy, portfolio, execution, performance, df)
     backtest.run()
 
-    # Print the results
+    # 輸出結果
     print("Backtest Results:")
     print(f"Final PnL: {backtest.results['pnl']:.2f}")
     backtest.to_json("backtest_results.json")

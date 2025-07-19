@@ -6,10 +6,10 @@ from data_ingestion.py.data_source import APIDataSource
 
 
 async def main():
-    # Configure the rate limiter: 5 calls per 1 second
+    # 設定速率限制器：每秒 5 次呼叫
     rate_limiter = RateLimiter(calls=5, period=1)
 
-    # Configure the cache: 100 items capacity
+    # 設定快取：容量 100 筆
     cache = LRUCache(capacity=100)
 
     # 使用 context manager 建立 API client，透過 proxy 轉發

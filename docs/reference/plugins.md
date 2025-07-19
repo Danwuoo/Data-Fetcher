@@ -1,16 +1,16 @@
-# Plugin Architecture
+# Plugin 架構
 
-The backtesting framework uses a plugin-style architecture to load custom strategies. This approach decouples the core framework from user-defined strategies, making it easy to extend and maintain.
+本回測框架採用外掛式架構載入自訂策略，藉此將核心框架與使用者策略解耦，方便擴充與維護。
 
 ## Strategy Registry
 
-The central component of the plugin system is the `StrategyRegistry`, located in `src/backtest_data_module/strategy_manager/registry.py`. This class is responsible for discovering, registering, and loading strategies.
+外掛系統的核心元件為 `StrategyRegistry`，位於 `src/backtest_data_module/strategy_manager/registry.py`。此類別負責探索、註冊並載入策略。
 
-### Registration
+### 註冊方式
 
-Strategies can be registered in two ways:
+策略可透過兩種方式註冊：
 
-1.  **Manual Registration**: You can explicitly register a strategy using the `register` method of the `strategy_registry` instance.
+1. **手動註冊**：直接使用 `strategy_registry` 物件的 `register` 方法註冊策略。
 
     ```python
     from backtest_data_module.strategy_manager.registry import strategy_registry
@@ -19,7 +19,7 @@ Strategies can be registered in two ways:
     strategy_registry.register("MyAwesomeStrategy", MyAwesomeStrategy)
     ```
 
-2.  **Automatic Discovery**: The `discover` method can automatically find and register strategies from a given directory. The registry will search for modules, import them, and register any class that inherits from `StrategyBase`.
+2. **自動探索**：`discover` 方法可從指定目錄自動尋找並註冊策略。該方法會搜尋模組、匯入後，將繼承自 `StrategyBase` 的類別自動註冊。
 
     ```python
     from backtest_data_module.strategy_manager.registry import strategy_registry
@@ -27,9 +27,9 @@ Strategies can be registered in two ways:
     strategy_registry.discover("path/to/my/strategies")
     ```
 
-### Usage
+### 使用方式
 
-Once a strategy is registered, you can instantiate the `Orchestrator` with the strategy's name.
+策略註冊後，即可在建立 `Orchestrator` 時以策略名稱指定：
 
 ```python
 from backtest_data_module.backtesting.orchestrator import Orchestrator
@@ -37,34 +37,34 @@ from backtest_data_module.backtesting.orchestrator import Orchestrator
 orchestrator = Orchestrator(
     data_handler=data_handler,
     strategy_name="MyAwesomeStrategy",
-    # ... other parameters
+    # ... 其他參數
 )
 ```
 
-## Core Module APIs
+## 核心模組 API
 
-This section provides an overview of the APIs for the core modules of the backtesting framework.
+以下簡要說明回測框架各核心模組的 API。
 
 ### Strategy
 
--   **`StrategyBase`**: The abstract base class for all strategies.
-    -   `on_data(event)`: This abstract method must be implemented by all concrete strategies. It is called for each new data event and should return a list of `SignalEvent`s.
-    -   `on_start(context)`: Called at the beginning of a backtest.
-    -   `on_finish(context)`: Called at the end of a backtest.
+- **`StrategyBase`**：所有策略的抽象基底類別。
+    - `on_data(event)`：必須實作，收到新資料事件時被呼叫，應回傳 `SignalEvent` 列表。
+    - `on_start(context)`：回測開始時呼叫。
+    - `on_finish(context)`：回測結束時呼叫。
 
 ### DataHandler
 
--   **`DataHandler`**: The centralized interface for data access.
-    -   `read(query, tiers, compressed_cols)`: Reads data from the specified storage tiers.
-    -   `stream(symbols, freq)`: Streams data asynchronously.
+- **`DataHandler`**：集中管理資料存取的介面。
+    - `read(query, tiers, compressed_cols)`：從指定層級讀取資料。
+    - `stream(symbols, freq)`：非同步串流資料。
 
 ### Execution
 
--   **`Execution`**: Handles order execution.
-    -   `place_order(order, timestamp)`: Places an order in the execution queue.
-    -   `process_orders(current_time, price_data)`: Processes orders that are ready to be executed.
+- **`Execution`**：處理下單與成交。
+    - `place_order(order, timestamp)`：將訂單放入佇列。
+    - `process_orders(current_time, price_data)`：處理已到執行時間的訂單。
 
 ### Performance
 
--   **`Performance`**: Calculates performance metrics.
-    -   `compute_metrics()`: Computes a summary of performance metrics.
+- **`Performance`**：計算績效指標。
+    - `compute_metrics()`：回傳績效摘要。

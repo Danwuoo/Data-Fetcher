@@ -59,8 +59,8 @@ class TestCrossValidation(unittest.TestCase):
             self.assertEqual(len(test), test_size)
 
     def test_run_cpcv(self):
-        # This is a basic test to ensure the function runs without errors.
-        # A more thorough test would require a more complex mock strategy.
+        # 基本測試，確認函式能順利執行
+        # 更完整的測試需搭配複雜的模擬策略
         result = run_cpcv(
             self.data, mock_strategy, n_splits=5, n_test_splits=2, embargo_pct=0.05
         )

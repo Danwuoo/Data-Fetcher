@@ -79,19 +79,19 @@ def purged_k_fold(
         test_start = test_index[0]
         test_end = test_index[-1]
 
-        # Define the embargo periods before and after the test set
+        # 定義測試集前後的隔離區間
         before_start = max(0, test_start - embargo)
         before_end = test_start - 1
         after_start = test_end + 1
         after_end = min(n_samples - 1, test_end + embargo)
 
-        # Create the set of embargo indices
+        # 建立需排除的索引集合
         embargo_indices: set[int] = (
             set(range(before_start, before_end + 1))
             | set(range(after_start, after_end + 1))
         )
 
-        # Purge the training indices
+        # 移除受隔離影響的訓練索引
         purged_train_index = [i for i in train_index if i not in embargo_indices]
         yield purged_train_index, test_index
 

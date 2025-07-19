@@ -1,49 +1,49 @@
-# Multi-Tiered Storage Strategy
+# 多層級儲存策略
 
-This project uses a Hot, Warm, and Cold three-tiered architecture to balance performance and cost:
+本專案採用 Hot、Warm、Cold 三層架構，以取得效能與成本的平衡：
 
-- **Hot**: Stored in-memory using DuckDB, suitable for real-time queries within 7 days.
-- **Warm**: Uses TimescaleDB/PostgreSQL, suitable for historical data and feature engineering from 30 to 180 days.
-- **Cold**: Stores long-term data as Parquet files in S3 or MinIO, which can be retained for several years.
+- **Hot**：使用 DuckDB 於記憶體中儲存，適合 7 天內的即時查詢。
+- **Warm**：採用 TimescaleDB/PostgreSQL，適合 30~180 天的歷史資料與特徵工程。
+- **Cold**：將長期資料以 Parquet 形式存放至 S3 或 MinIO，可保存數年。
 
-The `DataHandler` class provides a unified interface for interacting with the tiered storage system. It uses the `HybridStorageManager` to read and write data to the appropriate tier and automatically moves data down when capacity limits are reached.
+`DataHandler` 類別提供統一介面操作分層儲存系統，透過 `HybridStorageManager` 依需求讀寫資料，並在容量達上限時自動向下遷移。
 
 ```python
 import polars as pl
 from backtest_data_module.data_handler import DataHandler
 from backtest_data_module.data_storage.storage_backend import HybridStorageManager
 
-# Initialize the DataHandler
+# 初始化 DataHandler
 storage_manager = HybridStorageManager()
 data_handler = DataHandler(storage_manager)
 
-# Write data to the hot tier
+# 寫入資料至 Hot tier
 data_handler.storage_manager.write(pl.DataFrame({'a': [1, 2]}), 'prices', tier='hot')
 
-# Read data, automatically starting from the hottest tier
+# 讀取資料，會自較熱層級開始查詢
 recent = data_handler.read('prices')
 
-# Migrate data to the cold tier
+# 將資料遷移到 Cold tier
 data_handler.migrate('prices', 'hot', 'cold')
 ```
 
-## S3 Configuration Recommendations
+## S3 設定建議
 
-When using S3 for the cold tier, it is recommended to enable versioning to ensure that file updates do not overwrite old data. For cross-region backup, you can enable Cross-Region Replication and specify a secondary bucket to ensure data access in case of a primary region failure.
+若 Cold tier 使用 S3，建議開啟版本控制避免檔案覆寫。為了跨區備份，可啟用跨區複製並指定備援 bucket，以在主要區域故障時確保資料可存取。
 
-## Command-Line Operations
+## 指令列操作
 
-You can also move data tables using the `zxq` command-line tool:
+亦可透過 `zxq` CLI 搬移資料表：
 
 ```bash
 zxq storage migrate --table prices --to warm
 ```
 
-Adding the `--dry-run` parameter will only show the intended actions without actually executing them.
+加入 `--dry-run` 參數即可僅顯示預期動作，不會真正執行。
 
-## Hit Rate Statistics and Automatic Migration
+## 命中率統計與自動遷移
 
-The `HybridStorageManager` records the access time for each table. By default, a Prefect task calculates the number of hits for each table in the last seven days. If the hot tier usage exceeds `hot_usage_threshold` and a table's seven-day hit count is below `low_hit_threshold`, the system will automatically migrate it to the warm or cold tier. These parameters can be adjusted in the `storage.yaml` file:
+`HybridStorageManager` 會記錄每個表格的存取時間，預設由 Prefect 任務計算近七日的命中次數。若 Hot tier 使用率超過 `hot_usage_threshold`，且表格的七日命中次數低於 `low_hit_threshold`，系統將自動將其遷移至較冷的層級。這些參數可在 `storage.yaml` 中調整：
 
 ```yaml
 low_hit_threshold: 2
@@ -51,4 +51,4 @@ hot_usage_threshold: 0.8
 hit_stats_schedule: "0 1 * * *"
 ```
 
-The `pipelines/hit_stats.py` file provides an example flow that can be scheduled to run after being deployed with `prefect deployment build`.
+`pipelines/hit_stats.py` 提供了範例流程，可透過 `prefect deployment build` 部署後排程執行。
