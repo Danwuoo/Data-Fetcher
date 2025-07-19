@@ -15,6 +15,7 @@ from backtest_data_module.backtesting.execution import Execution
 from backtest_data_module.backtesting.performance import Performance
 from backtest_data_module.backtesting.portfolio import Portfolio
 from backtest_data_module.backtesting.strategy import StrategyBase
+from backtest_data_module.strategy_manager.registry import strategy_registry
 from backtest_data_module.data_handler import DataHandler
 from backtest_data_module.data_processing.cross_validation import (
     combinatorial_purged_cv,
@@ -26,7 +27,7 @@ from backtest_data_module.utils.json_encoder import CustomJSONEncoder
 
 @ray.remote
 def run_backtest_slice(
-    strategy_cls: Type[StrategyBase],
+    strategy_name: str,
     portfolio_cls: Type[Portfolio],
     execution_cls: Type[Execution],
     performance_cls: Type[Performance],
@@ -40,6 +41,7 @@ def run_backtest_slice(
     """
     在獨立的 Ray 程序中執行單一回測切片。
     """
+    strategy_cls = strategy_registry.get_strategy(strategy_name)
     strategy = strategy_cls(**strategy_params)
     portfolio = portfolio_cls(**portfolio_params)
     execution = execution_cls(**execution_params)
@@ -68,29 +70,33 @@ class Orchestrator:
     def __init__(
         self,
         data_handler: DataHandler,
-        strategy_cls: Type[StrategyBase],
+        strategy_name: str,
         portfolio_cls: Type[Portfolio],
         execution_cls: Type[Execution],
         performance_cls: Type[Performance],
         register_api: str = None,
     ):
         self.data_handler = data_handler
-        self.strategy_cls = strategy_cls
+        self.strategy_name = strategy_name
+        self.strategy_cls = strategy_registry.get_strategy(strategy_name)
         self.portfolio_cls = portfolio_cls
         self.execution_cls = execution_cls
         self.performance_cls = performance_cls
         self.results = {}
         self.run_id = None
-        self.strategy_name = None
         self.hyperparams = None
         self.register_api = register_api
-        self.api_client = httpx.Client(
-            base_url=self.register_api,
-            headers={"X-API-KEY": os.environ.get("STRATEGY_MANAGER_API_KEY")},
-        )
+        if self.register_api:
+            self.api_client = httpx.Client(
+                base_url=self.register_api,
+                headers={"X-API-KEY": os.environ.get("STRATEGY_MANAGER_API_KEY")},
+            )
+        else:
+            self.api_client = None
 
     def _create_run(self, orchestrator_type: str):
         if not self.register_api:
+            self.run_id = f"local-run-{os.urandom(4).hex()}"
             return
         response = self.api_client.post(
             "/runs",
@@ -149,7 +155,6 @@ class Orchestrator:
             raise ValueError("No valid configuration found for walk_forward or cpcv")
 
     def run(self, config: dict, data: pd.DataFrame) -> List[dict]:
-        self.strategy_name = self.strategy_cls.__name__
         self.hyperparams = config.get("strategy_params", {})
         self.config = config
         self._create_run("walk_forward" if "walk_forward" in config else "cpcv")
@@ -197,7 +202,6 @@ class Orchestrator:
             raise
 
     def run_ray(self, config: dict, data: pd.DataFrame) -> List[dict]:
-        self.strategy_name = self.strategy_cls.__name__
         self.hyperparams = config.get("strategy_params", {})
         self.config = config
         self._create_run("walk_forward" if "walk_forward" in config else "cpcv")
@@ -215,7 +219,7 @@ class Orchestrator:
 
                 results_refs.append(
                     run_backtest_slice.remote(
-                        self.strategy_cls,
+                        self.strategy_name,
                         self.portfolio_cls,
                         self.execution_cls,
                         self.performance_cls,
